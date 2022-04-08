@@ -1,5 +1,5 @@
 <launch>
 
-    <node pkg="project1" type="velocity_calc" name="vel_listener" output="screen" />
+    <node pkg="project1" type="vel_odom_pub" name="vel_odom_pub" output="screen" />
 
 </launch>
