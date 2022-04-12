@@ -42,5 +42,6 @@ int main(int argc, char **argv){
   pub_wheelRPM = nh.advertise<project1::StampedWheelRPM>("/wheels_rpm", 10);
   //ros::Rate rate(10);
 
+  ROS_INFO("WHEELS RPM NODE");
   ros::spin();
 }

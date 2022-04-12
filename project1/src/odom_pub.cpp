@@ -1,9 +1,13 @@
 #include <ros/ros.h>
+
 #include <geometry_msgs/TwistStamped.h>
-#include <geometry_msgs/PoseStamped.h>
 #include <nav_msgs/Odometry.h>
 #include <sensor_msgs/JointState.h>
+
 #include <tf/transform_broadcaster.h>
+
+#include <dynamic_reconfigure/server.h>
+#include <project1/parametersConfig.h>
 
 
 float r = 0.7;
@@ -11,6 +15,12 @@ float l = 0.2;
 float w = 0.169;
 
 ros::Publisher pub_odom;
+
+
+void DynamicReconfigureCallback(project1::parametersConfig &config, uint32_t level) {
+  ROS_INFO("Reconfigure Request: %d", 
+            config.integration_mode);
+}
 
 
 void CalcluateOdometryCallback(const geometry_msgs::TwistStamped& msg_in){
@@ -60,10 +70,29 @@ int main(int argc, char **argv){
   ros::init(argc, argv, "calculate_odometry");
   ros::NodeHandle nh;
 
+  //TODO: Create and set Initial Pose parameter
+  //std::map<std::string,std::string> map_s, map_s2;
+  //map_s["a"] = "foo";
+  //map_s["b"] = "bar";
+  //map_s["c"] = "baz";
+  // Set and get a map of strings
+  //nh.setParam("my_string_map", map_s);
+
+  //Subscribe to cmd_vel
   ros::Subscriber sub_vel = nh.subscribe("/cmd_vel", 10, &CalcluateOdometryCallback);
-  
+
+  //Setup publisher odom
   pub_odom = nh.advertise<nav_msgs::Odometry>("/odom", 10);
   //ros::Rate rate(10);
 
+  //Dynamic Reconfigure
+  dynamic_reconfigure::Server<project1::parametersConfig> server;
+  dynamic_reconfigure::Server<project1::parametersConfig>::CallbackType f;
+
+  f = boost::bind(&DynamicReconfigureCallback, _1, _2);
+  server.setCallback(f);
+
+
+  ROS_INFO("ODOMETRY NODE");
   ros::spin();
 }

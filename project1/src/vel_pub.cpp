@@ -41,7 +41,7 @@ int main(int argc, char **argv){
   pub_vel = nh.advertise<geometry_msgs::TwistStamped>("/cmd_vel", 10);
   //ros::Rate rate(10);
 
+
+  ROS_INFO("VELOCITY NODE");
   ros::spin();
 }
-
-//TODO CAPIRE PERCHE' NON VA BENE TWISTSTAMPED

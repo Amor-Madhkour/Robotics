@@ -13,6 +13,7 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   message_generation
   tf
+  dynamic_reconfigure
 )
 
 ## System dependencies are found with CMake's conventions
@@ -89,10 +90,9 @@ generate_messages(
 ##     and list every .cfg file to be processed
 
 ## Generate dynamic reconfigure parameters in the 'cfg' folder
-# generate_dynamic_reconfigure_options(
-#   cfg/DynReconf1.cfg
-#   cfg/DynReconf2.cfg
-# )
+generate_dynamic_reconfigure_options(
+ cfg/parameters.cfg
+)
 
 ###################################
 ## catkin specific configuration ##
@@ -209,10 +209,13 @@ include_directories(
 # catkin_add_nosetests(test)
 
 add_executable(vel_pub src/vel_pub.cpp)
+add_dependencies(vel_pub ${catkin_EXPORTED_TARGETS})
 target_link_libraries(vel_pub ${catkin_LIBRARIES})
 
 add_executable(odom_pub src/odom_pub.cpp)
+add_dependencies(odom_pub ${catkin_EXPORTED_TARGETS})
 target_link_libraries(odom_pub ${catkin_LIBRARIES})
 
 add_executable(wheelRPM_pub src/wheelRPM_pub.cpp)
+add_dependencies(wheelRPM_pub ${catkin_EXPORTED_TARGETS})
 target_link_libraries(wheelRPM_pub ${catkin_LIBRARIES})
