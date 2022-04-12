@@ -208,5 +208,11 @@ include_directories(
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
 
-add_executable(vel_odom_pub src/vel_odom_pub.cpp)
-target_link_libraries(vel_odom_pub ${catkin_LIBRARIES})
+add_executable(vel_pub src/vel_pub.cpp)
+target_link_libraries(vel_pub ${catkin_LIBRARIES})
+
+add_executable(odom_pub src/odom_pub.cpp)
+target_link_libraries(odom_pub ${catkin_LIBRARIES})
+
+add_executable(wheelRPM_pub src/wheelRPM_pub.cpp)
+target_link_libraries(wheelRPM_pub ${catkin_LIBRARIES})

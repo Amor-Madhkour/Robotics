@@ -1,5 +1,7 @@
 <launch>
 
-    <node pkg="project1" type="vel_odom_pub" name="vel_odom_pub" output="screen" />
+    <node pkg="project1" type="vel_pub" name="vel_pub" output="screen" launch-prefix="gnome-terminal --command" />
+    <node pkg="project1" type="odom_pub" name="odom_pub" output="screen" launch-prefix="gnome-terminal --command" />
+    <node pkg="project1" type="wheelRPM_pub" name="wheelRPM_pub" output="screen" launch-prefix="gnome-terminal --command" />
 
 </launch>
