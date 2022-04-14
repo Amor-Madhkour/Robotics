@@ -2,33 +2,79 @@
 #include <geometry_msgs/TwistStamped.h>
 #include <nav_msgs/Odometry.h>
 #include <sensor_msgs/JointState.h>
+#include <std_msgs/Time.h>
 
 
-float r = 0.7;
-float l = 0.2;
-float w = 0.169;
+const float r = 0.7;
+const float l = 0.2;
+const float w = 0.169;
+const int T = 5;
+const int N = 42;
+const int N_WHEELS = 4;
 
-// Wheel wlb; //left bottom wheel
-// Wheel wlt; //left top wheel
-// Wheel wrb; //right bottom wheel
-// Wheel wrt; //right top wheel
+float PI = 3.1415;
+
+double last_time = 1.7976931348623157E+308; //Time initialized to infinity
+float last_ticks[4];
 
 ros::Publisher pub_vel;
+
+
+
+void UpdateLastValues(const sensor_msgs::JointState& msg_in){
+
+  last_time = msg_in.header.stamp.toSec();
+
+  for (int i = 0; i < N_WHEELS; i++) {
+    last_ticks[i] = msg_in.position[i];
+  }
+  
+}
+
+float CalculateVelocityFromTickDelta(float deltaTick, float deltaTime)
+{
+  return (2 * PI * (deltaTick / deltaTime) / N) / T;
+}
+
 
 void CalcluateVelocityCallback(const sensor_msgs::JointState& msg_in){
 
   geometry_msgs::TwistStamped msg_out = geometry_msgs::TwistStamped();
   msg_out.header.stamp = ros::Time::now();
 
-  //msg_out.twist.linear.x
-  //msg_out.twist.angular.x
+  //Initial setup - executed only at the beginning of the bag
+  if(last_time > msg_in.header.stamp.toSec())
+  {
+    UpdateLastValues(msg_in);
+  }
+  else
+  {
+    //Wheels order: fl, fr, bl, br
 
-  //TODO ADD FORMULA 
+    //Calculate wheels angular velocities
+    float wheels_velocity[4];
+    for (int i = 0; i < N_WHEELS; i++) {
+      wheels_velocity[i] = CalculateVelocityFromTickDelta(msg_in.position[i] - last_ticks[i], msg_in.header.stamp.toSec() - last_time);
+    }
 
-  pub_vel.publish(msg_out);
+    float vx = (wheels_velocity[0] + wheels_velocity[1] + wheels_velocity[2] + wheels_velocity[3]) / 4;
 
-  ROS_INFO("Ciao Velocity");
+    float vy = (- wheels_velocity[0] + wheels_velocity[1] + wheels_velocity[2] - wheels_velocity[3]) / 4;
+
+    float K = l + w;
+    float omega = (- wheels_velocity[0] + wheels_velocity[1] - wheels_velocity[2] + wheels_velocity[3]) / (4 * K);
+
+    //TODO ADD FORMULA 
+
+    pub_vel.publish(msg_out);
+
+    ROS_INFO("Vx: %f, Vy: %f, omega: %f", vx, vy, omega);
+    //ROS_INFO("T. prev: %f, tick prev: %f", last_time, last_ticks_fl);
+
+    UpdateLastValues(msg_in);
+  }
 }
+
 
 
 int main(int argc, char **argv){
@@ -36,12 +82,17 @@ int main(int argc, char **argv){
   ros::init(argc, argv, "calculate_velocity");
   ros::NodeHandle nh;
 
-  ros::Subscriber sub_wheels = nh.subscribe("/wheel_states", 10, &CalcluateVelocityCallback);
+  ros::Subscriber sub_wheels = nh.subscribe("/wheel_states", 1000, &CalcluateVelocityCallback);
   
-  pub_vel = nh.advertise<geometry_msgs::TwistStamped>("/cmd_vel", 10);
-  //ros::Rate rate(10);
+  pub_vel = nh.advertise<geometry_msgs::TwistStamped>("/cmd_vel", 1);
+  ros::Rate rate(1);
 
 
   ROS_INFO("VELOCITY NODE");
-  ros::spin();
+  while(ros::ok()){
+
+    ros::spinOnce();
+
+  }
+  
 }
