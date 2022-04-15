@@ -40,7 +40,6 @@ float CalculateVelocityFromTickDelta(float deltaTick, float deltaTime)
 void CalcluateVelocityCallback(const sensor_msgs::JointState& msg_in){
 
   geometry_msgs::TwistStamped msg_out = geometry_msgs::TwistStamped();
-  msg_out.header.stamp = ros::Time::now();
 
   //Initial setup - executed only at the beginning of the bag
   if(last_time > msg_in.header.stamp.toSec())
@@ -57,15 +56,20 @@ void CalcluateVelocityCallback(const sensor_msgs::JointState& msg_in){
       wheels_velocity[i] = CalculateVelocityFromTickDelta(msg_in.position[i] - last_ticks[i], msg_in.header.stamp.toSec() - last_time);
     }
 
-    float vx = (wheels_velocity[0] + wheels_velocity[1] + wheels_velocity[2] + wheels_velocity[3]) / 4;
+    float vx = r * (wheels_velocity[0] + wheels_velocity[1] + wheels_velocity[2] + wheels_velocity[3]) / 4;
 
-    float vy = (- wheels_velocity[0] + wheels_velocity[1] + wheels_velocity[2] - wheels_velocity[3]) / 4;
+    float vy = r * (- wheels_velocity[0] + wheels_velocity[1] + wheels_velocity[2] - wheels_velocity[3]) / 4;
 
     float K = l + w;
-    float omega = (- wheels_velocity[0] + wheels_velocity[1] - wheels_velocity[2] + wheels_velocity[3]) / (4 * K);
+    float omega = r * (- wheels_velocity[0] + wheels_velocity[1] - wheels_velocity[2] + wheels_velocity[3]) / (4 * K);
 
-    //TODO ADD FORMULA 
+    //Setup message out
+    msg_out.header.stamp = msg_in.header.stamp;
+    msg_out.twist.linear.x = vx;
+    msg_out.twist.linear.y = vy;
+    msg_out.twist.angular.z = omega;
 
+    //Publish message out
     pub_vel.publish(msg_out);
 
     ROS_INFO("Vx: %f, Vy: %f, omega: %f", vx, vy, omega);

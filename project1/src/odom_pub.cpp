@@ -9,10 +9,20 @@
 #include <dynamic_reconfigure/server.h>
 #include <project1/parametersConfig.h>
 
+#include <math.h> 
 
-float r = 0.7;
-float l = 0.2;
-float w = 0.169;
+
+const float r = 0.7;
+const float l = 0.2;
+const float w = 0.169;
+const int T = 5;
+const int N = 42;
+const int N_WHEELS = 4;
+
+float last_x = 0;
+float last_y = 0;
+float last_theta = 0;
+
 
 ros::Publisher pub_odom;
 
@@ -27,16 +37,38 @@ void CalcluateOdometryCallback(const geometry_msgs::TwistStamped& msg_in){
 
   nav_msgs::Odometry msg_out = nav_msgs::Odometry();
 
-  //msg_out.twist.linear.x
-  //msg_out.twist.angular.z
+  float delta_x;
+  float delta_y;
+  float delta_theta;
 
-  //TODO ADD FORMULA 
+  //Calculate deltas
+  if(msg_in.twist.angular.z != 0){
+    delta_x = (msg_in.twist.linear.x * sin(msg_in.twist.angular.z) + msg_in.twist.linear.y * (cos(msg_in.twist.angular.z) - 1)) / msg_in.twist.angular.z;
+    delta_y = (msg_in.twist.linear.y * sin(msg_in.twist.angular.z) + msg_in.twist.linear.x * (1 - cos(msg_in.twist.angular.z))) / msg_in.twist.angular.z;
+    delta_theta = msg_in.twist.angular.z;
+  }
+  else{
+    delta_x = msg_in.twist.linear.x;
+    delta_y = msg_in.twist.linear.y;
+    delta_theta = 0;
+  }
 
-  //pub_odom.publish(msg_out);
+  //Update last position
+  last_x += delta_x;
+  last_y += delta_y;
+  last_theta += delta_theta;
+
+  //Setup message out
+  msg_out.header.stamp = msg_in.header.stamp;
+  msg_out.pose.pose.position.x = last_x;
+  msg_out.pose.pose.position.y = last_y;
+  msg_out.pose.pose.orientation.z = last_theta;
+
+  pub_odom.publish(msg_out);
 
   //BroadcastTF(msg_out.twist.linear.x, msg_out.twist.linear.y, msg_out.twist.angular.z);
 
-  ROS_INFO("Ciao Odometry");
+  ROS_INFO("x: %f, y: %f, theta: %f", last_x, last_y, last_theta);
 }
 
 
