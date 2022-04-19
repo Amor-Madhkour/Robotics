@@ -19,44 +19,90 @@ const int T = 5;
 const int N = 42;
 const int N_WHEELS = 4;
 
+double last_time = 1.7976931348623157E+308; //Time initialized to infinity
 float last_x = 0;
 float last_y = 0;
 float last_theta = 0;
+float delta_x, delta_y, delta_theta;
 
+int integration_mode; //If 0 Euler, if 1 Runge-kutta
 
 ros::Publisher pub_odom;
 
 
+/*
+void ResetPos(newpos)
+{
+  last_x = newpos.x 
+  ...
+}
+*/
+
 void DynamicReconfigureCallback(project1::parametersConfig &config, uint32_t level) {
   ROS_INFO("Reconfigure Request: %d", 
             config.integration_mode);
+  integration_mode = config.integration_mode;
 }
 
+void CalculateDeltas(float vx, float vy, float w, double dt)
+{
+  //Calculate deltas
+  if(w != 0){
+    delta_x = (vx * sin(w) + vy * (cos(w) - 1)) / w * dt;
+    delta_y = (vy * sin(w) + vx * (1 - cos(w))) / w * dt;
+    delta_theta = w * dt;
+  }
+  else {
+    delta_x = vx * dt;
+    delta_y = vy * dt;
+    delta_theta = 0;
+  }
+}
+
+void Euler(float vx, float vy, float w, double dt)
+{
+  CalculateDeltas(vx, vy, w, dt);
+
+  //Update last position: EULER
+  last_x += delta_x;
+  last_y += delta_y;
+  last_theta += delta_theta;
+}
+
+void RungeKutta(float vx, float vy, float w, double dt)
+{
+  CalculateDeltas(vx, vy, w, dt);
+
+  //Update last position: RK
+  last_x += delta_x * cos(w*dt/2) + delta_x * (-sin(w*dt/2));
+  last_y += delta_y * sin(w*dt/2) + delta_x * cos(w*dt/2);
+  last_theta += delta_theta;
+}
 
 void CalcluateOdometryCallback(const geometry_msgs::TwistStamped& msg_in){
 
   nav_msgs::Odometry msg_out = nav_msgs::Odometry();
 
-  float delta_x;
-  float delta_y;
-  float delta_theta;
-
-  //Calculate deltas
-  if(msg_in.twist.angular.z != 0){
-    delta_x = (msg_in.twist.linear.x * sin(msg_in.twist.angular.z) + msg_in.twist.linear.y * (cos(msg_in.twist.angular.z) - 1)) / msg_in.twist.angular.z;
-    delta_y = (msg_in.twist.linear.y * sin(msg_in.twist.angular.z) + msg_in.twist.linear.x * (1 - cos(msg_in.twist.angular.z))) / msg_in.twist.angular.z;
-    delta_theta = msg_in.twist.angular.z;
-  }
-  else{
-    delta_x = msg_in.twist.linear.x;
-    delta_y = msg_in.twist.linear.y;
-    delta_theta = 0;
+  if(last_time > msg_in.header.stamp.toSec())
+  {
+    last_time = msg_in.header.stamp.toSec();
+    return;
   }
 
-  //Update last position
-  last_x += delta_x;
-  last_y += delta_y;
-  last_theta += delta_theta;
+  switch (integration_mode)
+  {
+    case 0:
+      Euler(msg_in.twist.linear.x, msg_in.twist.linear.y, msg_in.twist.angular.z, msg_in.header.stamp.toSec() - last_time);
+    break;
+    case 1:
+      RungeKutta(msg_in.twist.linear.x, msg_in.twist.linear.y, msg_in.twist.angular.z, msg_in.header.stamp.toSec() - last_time);
+    break;
+    default:
+      ROS_INFO("integration mode not implemented");
+    break;
+  }
+
+  last_time = msg_in.header.stamp.toSec();
 
   //Setup message out
   msg_out.header.stamp = msg_in.header.stamp;

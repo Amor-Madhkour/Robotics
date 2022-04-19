@@ -4,6 +4,7 @@
 #include <sensor_msgs/JointState.h>
 #include <std_msgs/Time.h>
 
+#define PI 3.1415
 
 const float r = 0.7;
 const float l = 0.2;
@@ -11,8 +12,6 @@ const float w = 0.169;
 const int T = 5;
 const int N = 42;
 const int N_WHEELS = 4;
-
-float PI = 3.1415;
 
 double last_time = 1.7976931348623157E+308; //Time initialized to infinity
 float last_ticks[4];
