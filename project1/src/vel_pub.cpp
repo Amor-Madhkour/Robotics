@@ -6,7 +6,7 @@
 
 #define PI 3.1415
 
-const float r = 0.7;
+const float r = 0.07;
 const float l = 0.2;
 const float w = 0.169;
 const int T = 5;
@@ -47,23 +47,26 @@ void CalcluateVelocityCallback(const sensor_msgs::JointState& msg_in){
   }
   else
   {
-    //Wheels order: fl, fr, bl, br
+    //Wheels order: fl, fr, rl, rr
 
     //Calculate wheels angular velocities
     float wheels_velocity[4];
     for (int i = 0; i < N_WHEELS; i++) {
       wheels_velocity[i] = CalculateVelocityFromTickDelta(msg_in.position[i] - last_ticks[i], msg_in.header.stamp.toSec() - last_time);
+      //wheels_velocity[i] = msg_in.velocity[i] / T / 60; //SOLO DEBUG
     }
 
     float vx = r * (wheels_velocity[0] + wheels_velocity[1] + wheels_velocity[2] + wheels_velocity[3]) / 4;
 
     float vy = r * (- wheels_velocity[0] + wheels_velocity[1] + wheels_velocity[2] - wheels_velocity[3]) / 4;
+    //float vy = r * (- wheels_velocity[0] + wheels_velocity[1] - wheels_velocity[2] + wheels_velocity[3]) / 4;
 
-    float K = l + w;
-    float omega = r * (- wheels_velocity[0] + wheels_velocity[1] - wheels_velocity[2] + wheels_velocity[3]) / (4 * K);
+    float omega = r * (- wheels_velocity[0] + wheels_velocity[1] - wheels_velocity[2] + wheels_velocity[3]) / (4 * (l + w));
+    //float omega = r * (- wheels_velocity[0] + wheels_velocity[1] + wheels_velocity[2] - wheels_velocity[3]) / (4 * (l + w));
 
     //Setup message out
     msg_out.header.stamp = msg_in.header.stamp;
+    msg_out.header.frame_id = msg_in.header.frame_id;
     msg_out.twist.linear.x = vx;
     msg_out.twist.linear.y = vy;
     msg_out.twist.angular.z = omega;
@@ -73,6 +76,16 @@ void CalcluateVelocityCallback(const sensor_msgs::JointState& msg_in){
 
     ROS_INFO("Vx: %f, Vy: %f, omega: %f", vx, vy, omega);
     //ROS_INFO("T. prev: %f, tick prev: %f", last_time, last_ticks_fl);
+
+
+    //REMOVE
+    float error[4];
+    for (int i = 0; i < N_WHEELS; i++) {
+      error[i] = 60 * T * wheels_velocity[i] - msg_in.velocity[i];
+      //ROS_INFO("Wheel %d at %f: calc-%f, read-%f", i, msg_in.header.stamp.toSec(), wheels_velocity[i]*60*T, msg_in.velocity[i]);
+    }
+    //REMOVE
+
 
     UpdateLastValues(msg_in);
   }
@@ -88,7 +101,6 @@ int main(int argc, char **argv){
   ros::Subscriber sub_wheels = nh.subscribe("/wheel_states", 1000, &CalcluateVelocityCallback);
   
   pub_vel = nh.advertise<geometry_msgs::TwistStamped>("/cmd_vel", 1);
-  ros::Rate rate(1);
 
 
   ROS_INFO("VELOCITY NODE");

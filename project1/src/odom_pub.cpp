@@ -12,7 +12,7 @@
 #include <math.h> 
 
 
-const float r = 0.7;
+const float r = 0.07;
 const float l = 0.2;
 const float w = 0.169;
 const int T = 5;
@@ -75,7 +75,7 @@ void RungeKutta(float vx, float vy, float w, double dt)
 
   //Update last position: RK
   last_x += delta_x * cos(w*dt/2) + delta_x * (-sin(w*dt/2));
-  last_y += delta_y * sin(w*dt/2) + delta_x * cos(w*dt/2);
+  last_y += delta_y * sin(w*dt/2) + delta_y * cos(w*dt/2);
   last_theta += delta_theta;
 }
 
@@ -106,6 +106,7 @@ void CalcluateOdometryCallback(const geometry_msgs::TwistStamped& msg_in){
 
   //Setup message out
   msg_out.header.stamp = msg_in.header.stamp;
+  msg_out.header.frame_id = "odom";
   msg_out.pose.pose.position.x = last_x;
   msg_out.pose.pose.position.y = last_y;
   msg_out.pose.pose.orientation.z = last_theta;
@@ -157,10 +158,10 @@ int main(int argc, char **argv){
   //nh.setParam("my_string_map", map_s);
 
   //Subscribe to cmd_vel
-  ros::Subscriber sub_vel = nh.subscribe("/cmd_vel", 10, &CalcluateOdometryCallback);
+  ros::Subscriber sub_vel = nh.subscribe("/cmd_vel", 1, &CalcluateOdometryCallback);
 
   //Setup publisher odom
-  pub_odom = nh.advertise<nav_msgs::Odometry>("/odom", 10);
+  pub_odom = nh.advertise<nav_msgs::Odometry>("/odom", 1);
   //ros::Rate rate(10);
 
   //Dynamic Reconfigure

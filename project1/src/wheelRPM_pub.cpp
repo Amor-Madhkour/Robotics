@@ -8,7 +8,7 @@
 
 #define PI 3.1415
 
-const float r = 0.7;
+const float r = 0.07;
 const float l = 0.2;
 const float w = 0.169;
 const int T = 5;
@@ -26,6 +26,8 @@ void CalcluateWheelsRPM(const geometry_msgs::TwistStamped& msg_in){
 
   project1::StampedWheelRPM msg_out = project1::StampedWheelRPM();
 
+  msg_out.header.stamp = msg_in.header.stamp;
+  msg_out.header.frame_id = msg_in.header.frame_id;
   //TODO VERIFICA FORMULA E Unità misura
   msg_out.rpm_fl = (h[0][0] * msg_in.twist.linear.x + h[0][1] * msg_in.twist.linear.y + h[0][2] * msg_in.twist.angular.z) / r * 60 /(2 * PI);
   msg_out.rpm_fr = (h[1][0] * msg_in.twist.linear.x + h[1][1] * msg_in.twist.linear.y + h[1][2] * msg_in.twist.angular.z) / r * 60 /(2 * PI);
