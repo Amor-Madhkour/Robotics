@@ -38,6 +38,13 @@ void ResetPos(newpos)
 }
 */
 
+void Reset()
+{
+  last_x = 0;
+  last_y = 0;
+  last_theta = 0;
+}
+
 void DynamicReconfigureCallback(project1::parametersConfig &config, uint32_t level) {
   ROS_INFO("Reconfigure Request: %d", 
             config.integration_mode);
@@ -86,6 +93,7 @@ void CalcluateOdometryCallback(const geometry_msgs::TwistStamped& msg_in){
   if(last_time > msg_in.header.stamp.toSec())
   {
     last_time = msg_in.header.stamp.toSec();
+    Reset();
     return;
   }
 
@@ -162,7 +170,7 @@ int main(int argc, char **argv){
 
   //Setup publisher odom
   pub_odom = nh.advertise<nav_msgs::Odometry>("/odom", 1);
-  //ros::Rate rate(10);
+  ros::Rate rate(100);
 
   //Dynamic Reconfigure
   dynamic_reconfigure::Server<project1::parametersConfig> server;

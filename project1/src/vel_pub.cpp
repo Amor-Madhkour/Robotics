@@ -13,8 +13,8 @@ const int T = 5;
 const int N = 42;
 const int N_WHEELS = 4;
 
-double last_time = 1.7976931348623157E+308; //Time initialized to infinity
-float last_ticks[4];
+double last_time = 1.7976931348623157E+308; //Time initialized to infinity: this logic allows to play a new bag without restarting this node
+float last_ticks[4] = {0, 0, 0, 0};
 
 ros::Publisher pub_vel;
 
@@ -41,11 +41,7 @@ void CalcluateVelocityCallback(const sensor_msgs::JointState& msg_in){
   geometry_msgs::TwistStamped msg_out = geometry_msgs::TwistStamped();
 
   //Initial setup - executed only at the beginning of the bag
-  if(last_time > msg_in.header.stamp.toSec())
-  {
-    UpdateLastValues(msg_in);
-  }
-  else
+  if(last_time < msg_in.header.stamp.toSec())
   {
     //Wheels order: fl, fr, rl, rr
 
@@ -82,13 +78,12 @@ void CalcluateVelocityCallback(const sensor_msgs::JointState& msg_in){
     float error[4];
     for (int i = 0; i < N_WHEELS; i++) {
       error[i] = 60 * T * wheels_velocity[i] - msg_in.velocity[i];
-      //ROS_INFO("Wheel %d at %f: calc-%f, read-%f", i, msg_in.header.stamp.toSec(), wheels_velocity[i]*60*T, msg_in.velocity[i]);
+      ROS_INFO("Wheel %d: calc-%f, read-%f", i, wheels_velocity[i]*60*T, msg_in.velocity[i]);
     }
     //REMOVE
-
+  }
 
     UpdateLastValues(msg_in);
-  }
 }
 
 
@@ -98,10 +93,12 @@ int main(int argc, char **argv){
   ros::init(argc, argv, "calculate_velocity");
   ros::NodeHandle nh;
 
-  ros::Subscriber sub_wheels = nh.subscribe("/wheel_states", 1000, &CalcluateVelocityCallback);
+  ros::Subscriber sub_wheels = nh.subscribe("/wheel_states", 1, &CalcluateVelocityCallback);
   
   pub_vel = nh.advertise<geometry_msgs::TwistStamped>("/cmd_vel", 1);
 
+
+  ros::Rate rate(100);
 
   ROS_INFO("VELOCITY NODE");
   while(ros::ok()){
