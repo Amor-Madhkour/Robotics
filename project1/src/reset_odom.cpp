@@ -12,9 +12,9 @@ int main(int argc, char** argv)
     }
 
     ros::NodeHandle n;
-    ros::service::waitForService("set_odom");
-    ros::ServiceClient set_pos = n.serviceClient<project::Reset>("set_odom");
-    project::Reset srv;
+    ros::service::waitForService("reset_odom");
+    ros::ServiceClient set_pos = n.serviceClient<project1::Reset>("reset_odom");
+    project1 ::Reset srv;
     srv.request.x = atoll(argv[1]);
     srv.request.y = atoll(argv[2]);
     srv.request.theta = atoll(argv[3]);
