@@ -12,6 +12,8 @@
 #include <math.h> 
 
 
+#include <project1/Reset.h>
+
 const float r = 0.07;
 const float l = 0.2;
 const float w = 0.169;
@@ -28,7 +30,7 @@ float delta_x, delta_y, delta_theta;
 int integration_mode; //If 0 Euler, if 1 Runge-kutta
 
 ros::Publisher pub_odom;
-
+ros::ServiceServer set_srv;
 
 /*
 void ResetPos(newpos)
@@ -150,7 +152,14 @@ void BroadcastTF(double x, double y, double th)
   //send the transform
   odom_broadcaster.sendTransform(odom_trans);
 }
-
+bool reset(project1::Reset::Request &req, project::Reset::Response &res)
+{
+    x = req.x;
+    y = req.y;
+    theta = req.theta;
+    ROS_INFO("Odom has been set to ([%f],[%f],[%f])", req.x, req.y, req.theta);
+    return true;
+}
 
 int main(int argc, char **argv){
 
@@ -170,6 +179,7 @@ int main(int argc, char **argv){
 
   //Setup publisher odom
   pub_odom = nh.advertise<nav_msgs::Odometry>("/odom", 1);
+  set_srv = n.advertiseService("set_odom", &odom_pub::set, this);
   ros::Rate rate(100);
 
   //Dynamic Reconfigure
