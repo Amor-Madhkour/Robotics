@@ -42,7 +42,7 @@ void ResetPos(newpos)
 }
 */
 
-void Reset()
+void SetInitialPositions()
 {
   last_x = 0;
   last_y = 0;
@@ -58,16 +58,22 @@ void DynamicReconfigureCallback(project1::parametersConfig &config, uint32_t lev
 void CalculateDeltas(float vx, float vy, float w, double dt)
 {
   //Calculate deltas
+  float delta_x_b, delta_y_b, delta_theta_b;
   if(w != 0){
-    delta_x = (vx * sin(w) + vy * (cos(w) - 1)) / w * dt;
-    delta_y = (vy * sin(w) + vx * (1 - cos(w))) / w * dt;
-    delta_theta = w * dt;
+    delta_x_b = (vx * sin(w) + vy * (cos(w) - 1)) / w * dt;
+    delta_y_b = (vy * sin(w) + vx * (1 - cos(w))) / w * dt;
+    delta_theta_b = w * dt;
   }
   else {
-    delta_x = vx * dt;
-    delta_y = vy * dt;
-    delta_theta = 0;
+    delta_x_b = vx * dt;
+    delta_y_b = vy * dt;
+    delta_theta_b = 0;
   }
+
+  //change reference system: NEEDS TO BE DISTINGUISHED BETWEEN EULER AND RK
+  delta_x = delta_x_b * cos(last_theta) - delta_y_b * sin(last_theta);
+  delta_y = delta_x_b * sin(last_theta) + delta_y_b * cos(last_theta);
+  delta_theta = delta_theta_b;
 }
 
 void Euler(float vx, float vy, float w, double dt)
@@ -97,7 +103,7 @@ void CalcluateOdometryCallback(const geometry_msgs::TwistStamped& msg_in){
   if(last_time > msg_in.header.stamp.toSec())
   {
     last_time = msg_in.header.stamp.toSec();
-    Reset();
+    SetInitialPositions(); //TO BE REMOVED
     return;
   }
 
@@ -117,11 +123,12 @@ void CalcluateOdometryCallback(const geometry_msgs::TwistStamped& msg_in){
   last_time = msg_in.header.stamp.toSec();
 
   //Setup message out
+  msg_out.header.seq = msg_in.header.seq;
   msg_out.header.stamp = msg_in.header.stamp;
   msg_out.header.frame_id = "odom";
   msg_out.pose.pose.position.x = last_x;
   msg_out.pose.pose.position.y = last_y;
-  msg_out.pose.pose.orientation.z = last_theta;
+  msg_out.pose.pose.orientation = tf::createQuaternionMsgFromYaw(last_theta);
 
   pub_odom.publish(msg_out);
 
@@ -182,7 +189,7 @@ int main(int argc, char **argv){
   //Setup publisher odom
   pub_odom = nh.advertise<nav_msgs::Odometry>("/odom", 1);
   set_srv = nh.advertiseService("set_odom", &reset);
-  ros::Rate rate(100);
+  //ros::Rate rate(100);
 
   //Dynamic Reconfigure
   dynamic_reconfigure::Server<project1::parametersConfig> server;

@@ -13,12 +13,17 @@ const int T = 5;
 const int N = 42;
 const int N_WHEELS = 4;
 
+const int noise_remover = 5;
+int skip_counter = 5;
+
 double last_time = 1.7976931348623157E+308; //Time initialized to infinity: this logic allows to play a new bag without restarting this node
 float last_ticks[4] = {0, 0, 0, 0};
 
 ros::Publisher pub_vel;
 
-
+//TODO REMOVE
+//ros::Publisher pub_w;
+//TODO REMOVE
 
 void UpdateLastValues(const sensor_msgs::JointState& msg_in){
 
@@ -30,13 +35,21 @@ void UpdateLastValues(const sensor_msgs::JointState& msg_in){
   
 }
 
-float CalculateVelocityFromTickDelta(float deltaTick, float deltaTime)
-{
+float CalculateVelocityFromTickDelta(float deltaTick, float deltaTime){
   return (2 * PI * (deltaTick / deltaTime) / N) / T;
 }
 
 
 void CalcluateVelocityCallback(const sensor_msgs::JointState& msg_in){
+
+  //Decrease Noise ---
+  if(skip_counter < noise_remover)
+  {
+    skip_counter++;
+    return;
+  }
+  skip_counter = 0;
+  //Decrease Noise ---
 
   geometry_msgs::TwistStamped msg_out = geometry_msgs::TwistStamped();
 
@@ -61,6 +74,7 @@ void CalcluateVelocityCallback(const sensor_msgs::JointState& msg_in){
     //float omega = r * (- wheels_velocity[0] + wheels_velocity[1] + wheels_velocity[2] - wheels_velocity[3]) / (4 * (l + w));
 
     //Setup message out
+    msg_out.header.seq = msg_in.header.seq;
     msg_out.header.stamp = msg_in.header.stamp;
     msg_out.header.frame_id = msg_in.header.frame_id;
     msg_out.twist.linear.x = vx;
@@ -75,11 +89,12 @@ void CalcluateVelocityCallback(const sensor_msgs::JointState& msg_in){
 
 
     //REMOVE
-    float error[4];
-    for (int i = 0; i < N_WHEELS; i++) {
-      error[i] = 60 * T * wheels_velocity[i] - msg_in.velocity[i];
-      ROS_INFO("Wheel %d: calc-%f, read-%f", i, wheels_velocity[i]*60*T, msg_in.velocity[i]);
-    }
+    //geometry_msgs::TwistStamped msg_out2 = geometry_msgs::TwistStamped();
+    //msg_out2.twist.linear.x = wheels_velocity[0]*60*T;
+    //msg_out2.twist.linear.y = wheels_velocity[1]*60*T;
+    //msg_out2.twist.linear.z = wheels_velocity[2]*60*T;
+    //msg_out2.twist.angular.z = wheels_velocity[3]*60*T;
+    //pub_w.publish(msg_out2);
     //REMOVE
   }
 
@@ -97,8 +112,11 @@ int main(int argc, char **argv){
   
   pub_vel = nh.advertise<geometry_msgs::TwistStamped>("/cmd_vel", 1);
 
+  //TODO REMOVE
+  //pub_w = nh.advertise<geometry_msgs::TwistStamped>("/wheel_vel_test", 1);
+  //TODO REMOVE
 
-  ros::Rate rate(100);
+  //ros::Rate rate(100);
 
   ROS_INFO("VELOCITY NODE");
   while(ros::ok()){
