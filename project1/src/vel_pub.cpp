@@ -1,17 +1,22 @@
 #include <ros/ros.h>
+//#include <data/data.h>
+
 #include <geometry_msgs/TwistStamped.h>
 #include <nav_msgs/Odometry.h>
 #include <sensor_msgs/JointState.h>
 #include <std_msgs/Time.h>
 
+// ============ DATA ===========
 #define PI 3.14159265359
 
-const float r = 0.07;
-const float l = 0.2;
-const float w = 0.169;
-const int T = 5;
-const int N = 42;
-const int N_WHEELS = 4;
+#define r 0.07
+#define l 0.2
+#define w 0.169
+#define N 42
+#define T 5
+#define N_WHEELS 4
+// =============================
+
 
 const int noise_remover = 5;
 int skip_counter = 3;

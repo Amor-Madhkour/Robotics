@@ -1,5 +1,10 @@
 <launch>
 
+     <!-- params  -->
+    <param name="initial_x" value="0"/>
+    <param name="initial_y" value="0"/>
+    <param name="initial_theta" value="0"/>
+
     <node pkg="project1" type="vel_pub" name="vel_pub" output="screen" launch-prefix="gnome-terminal --command" />
     <node pkg="project1" type="odom_pub" name="odom_pub" output="screen" launch-prefix="gnome-terminal --command" />
     <node pkg="project1" type="wheelRPM_pub" name="wheelRPM_pub" output="screen" launch-prefix="gnome-terminal --command" />

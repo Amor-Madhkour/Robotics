@@ -1,4 +1,5 @@
 #include <ros/ros.h>
+//#include <data/data.h>
 
 #include <geometry_msgs/TwistStamped.h>
 #include <nav_msgs/Odometry.h>
@@ -13,20 +14,26 @@
 
 #include <project1/Reset.h>
 
+// ============ DATA ===========
+#define PI 3.14159265359
 
+#define r 0.07
+#define l 0.2
+#define w 0.169
+#define N 42
+#define T 5
+#define N_WHEELS 4
+// =============================
 
 const float r = 0.07;
 const float l = 0.2;
 const float w = 0.169;
-const int T = 5;
-const int N = 42;
-const int N_WHEELS = 4;
 
 double last_time = 1.7976931348623157E+308; //Time initialized to infinity
-float last_x = 0;
-float last_y = 0;
-float last_theta = 0;
+float last_x, last_y, last_theta;
+float initial_x, initial_y, initial_theta;
 float delta_x_b, delta_y_b, delta_theta_b; //Referred to robot frame
+
 //odom frame position
 double x, y, theta;
 int integration_mode; //If 0 Euler, if 1 Runge-kutta
@@ -34,19 +41,12 @@ int integration_mode; //If 0 Euler, if 1 Runge-kutta
 ros::Publisher pub_odom;
 ros::ServiceServer set_srv;
 
-/*
-void ResetPos(newpos)
-{
-  last_x = newpos.x 
-  ...
-}
-*/
 
-void SetInitialPositions()
-{
-  last_x = 0;
-  last_y = 0;
-  last_theta = 0;
+//REMOVE
+void SetInitialPositions(){
+  last_x = initial_x;
+  last_y = initial_y;
+  last_theta = initial_theta;
 }
 
 void DynamicReconfigureCallback(project1::parametersConfig &config, uint32_t level) {
@@ -55,13 +55,13 @@ void DynamicReconfigureCallback(project1::parametersConfig &config, uint32_t lev
   integration_mode = config.integration_mode;
 }
 
-void CalculateDeltas(float vx, float vy, float w, double dt)
+void CalculateDeltas(float vx, float vy, float omega, double dt)
 {
   //Calculate deltas referred to robot frame
   if(w != 0){
-    delta_x_b = (vx * sin(w) + vy * (cos(w) - 1)) / w * dt;
-    delta_y_b = (vy * sin(w) + vx * (1 - cos(w))) / w * dt;
-    delta_theta_b = w * dt;
+    delta_x_b = (vx * sin(omega) + vy * (cos(omega) - 1)) / omega * dt;
+    delta_y_b = (vy * sin(omega) + vx * (1 - cos(omega))) / omega * dt;
+    delta_theta_b = omega * dt;
   }
   else {
     delta_x_b = vx * dt;
@@ -70,9 +70,9 @@ void CalculateDeltas(float vx, float vy, float w, double dt)
   }
 }
 
-void Euler(float vx, float vy, float w, double dt)
+void Euler(float vx, float vy, float omega, double dt)
 {
-  CalculateDeltas(vx, vy, w, dt);
+  CalculateDeltas(vx, vy, omega, dt);
 
   //Calculate deltas referred to odom with EULER
   last_x += delta_x_b * cos(last_theta) - delta_y_b * sin(last_theta);
@@ -80,12 +80,12 @@ void Euler(float vx, float vy, float w, double dt)
   last_theta += delta_theta_b;
 }
 
-void RungeKutta(float vx, float vy, float w, double dt)
+void RungeKutta(float vx, float vy, float omega, double dt)
 {
-  CalculateDeltas(vx, vy, w, dt);
+  CalculateDeltas(vx, vy, omega, dt);
 
-  float offset = w*dt/2;
   //Calculate deltas referred to odom with RK
+  float offset = omega * dt / 2;
   last_x += delta_x_b * cos(last_theta + offset) - delta_y_b * sin(last_theta + offset);
   last_y += delta_x_b * sin(last_theta + offset) + delta_y_b * cos(last_theta + offset);
   last_theta += delta_theta_b;
@@ -95,6 +95,7 @@ void CalcluateOdometryCallback(const geometry_msgs::TwistStamped& msg_in){
 
   nav_msgs::Odometry msg_out = nav_msgs::Odometry();
 
+  //Reset position if the bag restarts
   if(last_time > msg_in.header.stamp.toSec())
   {
     last_time = msg_in.header.stamp.toSec();
@@ -102,6 +103,7 @@ void CalcluateOdometryCallback(const geometry_msgs::TwistStamped& msg_in){
     return;
   }
 
+  //Integrate in the modality specified by the parameter 
   switch (integration_mode)
   {
     case 0:
@@ -125,6 +127,7 @@ void CalcluateOdometryCallback(const geometry_msgs::TwistStamped& msg_in){
   msg_out.pose.pose.position.y = last_y;
   msg_out.pose.pose.orientation = tf::createQuaternionMsgFromYaw(last_theta);
 
+  //Publish odom
   pub_odom.publish(msg_out);
 
   //BroadcastTF(msg_out.twist.linear.x, msg_out.twist.linear.y, msg_out.twist.angular.z, msg_in.header.stamp);
@@ -165,15 +168,12 @@ bool reset(project1::Reset::Request &req, project1::Reset::Response &res)
 int main(int argc, char **argv){
 
   ros::init(argc, argv, "calculate_odometry");
+
   ros::NodeHandle nh;
 
-  //TODO: Create and set Initial Pose parameter
-  //std::map<std::string,std::string> map_s, map_s2;
-  //map_s["a"] = "foo";
-  //map_s["b"] = "bar";
-  //map_s["c"] = "baz";
-  // Set and get a map of strings
-  //nh.setParam("my_string_map", map_s);
+  nh.getParam("/initial_x", initial_x);
+  nh.getParam("/initial_y", initial_y);
+  nh.getParam("/initial_theta", initial_theta);
 
   //Subscribe to cmd_vel
   ros::Subscriber sub_vel = nh.subscribe("/cmd_vel", 1, &CalcluateOdometryCallback);
