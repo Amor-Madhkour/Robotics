@@ -26,7 +26,7 @@ double last_time = 1.7976931348623157E+308; //Time initialized to infinity
 float last_x = 0;
 float last_y = 0;
 float last_theta = 0;
-float delta_x, delta_y, delta_theta;
+float delta_x_b, delta_y_b, delta_theta_b; //Referred to robot frame
 //odom frame position
 double x, y, theta;
 int integration_mode; //If 0 Euler, if 1 Runge-kutta
@@ -57,8 +57,7 @@ void DynamicReconfigureCallback(project1::parametersConfig &config, uint32_t lev
 
 void CalculateDeltas(float vx, float vy, float w, double dt)
 {
-  //Calculate deltas
-  float delta_x_b, delta_y_b, delta_theta_b;
+  //Calculate deltas referred to robot frame
   if(w != 0){
     delta_x_b = (vx * sin(w) + vy * (cos(w) - 1)) / w * dt;
     delta_y_b = (vy * sin(w) + vx * (1 - cos(w))) / w * dt;
@@ -69,31 +68,27 @@ void CalculateDeltas(float vx, float vy, float w, double dt)
     delta_y_b = vy * dt;
     delta_theta_b = 0;
   }
-
-  //change reference system: NEEDS TO BE DISTINGUISHED BETWEEN EULER AND RK
-  delta_x = delta_x_b * cos(last_theta) - delta_y_b * sin(last_theta);
-  delta_y = delta_x_b * sin(last_theta) + delta_y_b * cos(last_theta);
-  delta_theta = delta_theta_b;
 }
 
 void Euler(float vx, float vy, float w, double dt)
 {
   CalculateDeltas(vx, vy, w, dt);
 
-  //Update last position: EULER
-  last_x += delta_x;
-  last_y += delta_y;
-  last_theta += delta_theta;
+  //Calculate deltas referred to odom with EULER
+  last_x += delta_x_b * cos(last_theta) - delta_y_b * sin(last_theta);
+  last_y += delta_x_b * sin(last_theta) + delta_y_b * cos(last_theta);
+  last_theta += delta_theta_b;
 }
 
 void RungeKutta(float vx, float vy, float w, double dt)
 {
   CalculateDeltas(vx, vy, w, dt);
 
-  //Update last position: RK
-  last_x += delta_x * cos(w*dt/2) + delta_x * (-sin(w*dt/2));
-  last_y += delta_y * sin(w*dt/2) + delta_y * cos(w*dt/2);
-  last_theta += delta_theta;
+  float offset = w*dt/2;
+  //Calculate deltas referred to odom with RK
+  last_x += delta_x_b * cos(last_theta + offset) - delta_y_b * sin(last_theta + offset);
+  last_y += delta_x_b * sin(last_theta + offset) + delta_y_b * cos(last_theta + offset);
+  last_theta += delta_theta_b;
 }
 
 void CalcluateOdometryCallback(const geometry_msgs::TwistStamped& msg_in){
@@ -132,31 +127,28 @@ void CalcluateOdometryCallback(const geometry_msgs::TwistStamped& msg_in){
 
   pub_odom.publish(msg_out);
 
-  //BroadcastTF(msg_out.twist.linear.x, msg_out.twist.linear.y, msg_out.twist.angular.z);
+  //BroadcastTF(msg_out.twist.linear.x, msg_out.twist.linear.y, msg_out.twist.angular.z, msg_in.header.stamp);
 
   ROS_INFO("x: %f, y: %f, theta: %f", last_x, last_y, last_theta);
 }
 
 
-void BroadcastTF(double x, double y, double th)
+void BroadcastTF(float x, float y, float th,  ros::Time timeStamp)
 {
   //http://wiki.ros.org/navigation/Tutorials/RobotSetup/Odom
 
   tf::TransformBroadcaster odom_broadcaster;
 
-  //since all odometry is 6DOF we'll need a quaternion created from yaw
-  geometry_msgs::Quaternion odom_quat = tf::createQuaternionMsgFromYaw(th);
-
   //publish the transform over tf
   geometry_msgs::TransformStamped odom_trans;
-  odom_trans.header.stamp = ros::Time::now();
+  odom_trans.header.stamp = timeStamp;
   odom_trans.header.frame_id = "odom";
   odom_trans.child_frame_id = "base_link";
 
   odom_trans.transform.translation.x = x;
   odom_trans.transform.translation.y = y;
   odom_trans.transform.translation.z = 0.0;
-  odom_trans.transform.rotation = odom_quat;
+  odom_trans.transform.rotation = tf::createQuaternionMsgFromYaw(th);;
 
   //send the transform
   odom_broadcaster.sendTransform(odom_trans);
@@ -189,7 +181,7 @@ int main(int argc, char **argv){
   //Setup publisher odom
   pub_odom = nh.advertise<nav_msgs::Odometry>("/odom", 1);
   set_srv = nh.advertiseService("set_odom", &reset);
-  //ros::Rate rate(100);
+  ros::Rate rate(1000);
 
   //Dynamic Reconfigure
   dynamic_reconfigure::Server<project1::parametersConfig> server;

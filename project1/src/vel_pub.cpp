@@ -4,7 +4,7 @@
 #include <sensor_msgs/JointState.h>
 #include <std_msgs/Time.h>
 
-#define PI 3.1415
+#define PI 3.14159265359
 
 const float r = 0.07;
 const float l = 0.2;
@@ -14,7 +14,8 @@ const int N = 42;
 const int N_WHEELS = 4;
 
 const int noise_remover = 5;
-int skip_counter = 5;
+int skip_counter = 3;
+float ticks_avg[4];
 
 double last_time = 1.7976931348623157E+308; //Time initialized to infinity: this logic allows to play a new bag without restarting this node
 float last_ticks[4] = {0, 0, 0, 0};
@@ -24,6 +25,11 @@ ros::Publisher pub_vel;
 //TODO REMOVE
 //ros::Publisher pub_w;
 //TODO REMOVE
+
+void ResetTickAvg(){
+  for(int i = 0; i < sizeof(ticks_avg)/sizeof(float); i++)
+    ticks_avg[i] = 0;
+}
 
 void UpdateLastValues(const sensor_msgs::JointState& msg_in){
 
@@ -35,7 +41,7 @@ void UpdateLastValues(const sensor_msgs::JointState& msg_in){
   
 }
 
-float CalculateVelocityFromTickDelta(float deltaTick, float deltaTime){
+float CalculateVelocityFromTickDelta(float deltaTick, double deltaTime){
   return (2 * PI * (deltaTick / deltaTime) / N) / T;
 }
 
@@ -45,9 +51,13 @@ void CalcluateVelocityCallback(const sensor_msgs::JointState& msg_in){
   //Decrease Noise ---
   if(skip_counter < noise_remover)
   {
+    for(int i = 0; i < sizeof(ticks_avg)/sizeof(float); i++)
+      ticks_avg[i] = (ticks_avg[i] * skip_counter + msg_in.position[i]) / (skip_counter + 1); //avg di <noise_remover> ticks -> leggero smoothing
+
     skip_counter++;
     return;
   }
+  ResetTickAvg();
   skip_counter = 0;
   //Decrease Noise ---
 
