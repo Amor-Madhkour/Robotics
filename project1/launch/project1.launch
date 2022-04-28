@@ -2,7 +2,7 @@
 
      <!-- params  -->
     <param name="initial_x" value="0"/>
-    <param name="initial_y" value="0"/>
+    <param name="initial_y" value="0"/> //0.04 nel bag 3
     <param name="initial_theta" value="0"/>
 
     <node pkg="project1" type="vel_pub" name="vel_pub" output="screen" launch-prefix="gnome-terminal --command" />

@@ -6,6 +6,11 @@
 #include <sensor_msgs/JointState.h>
 #include <std_msgs/Time.h>
 
+//  //======== PARAMETERS CALIBRATION =========
+//#include <dynamic_reconfigure/server.h>
+//#include <project1/parametersConfig.h>
+//  //=========================================
+
 // ============ DATA ===========
 #define PI 3.14159265359
 
@@ -18,6 +23,8 @@
 // =============================
 
 
+//double r,l,w,N;
+
 const int noise_remover = 5;
 int skip_counter = 3;
 float ticks_avg[4];
@@ -28,8 +35,21 @@ float last_ticks[4] = {0, 0, 0, 0};
 ros::Publisher pub_vel;
 
 //TODO REMOVE
-//ros::Publisher pub_w;
+ros::Publisher pub_w;
 //TODO REMOVE
+
+
+//void DynamicReconfigureCallback(project1::parametersConfig &config, uint32_t level) {
+//
+//  //======== PARAMETERS CALIBRATION =========
+//  r = config.r;
+//  l = config.l;
+//  w = config.w;
+//  N = config.N;
+//  //=========================================
+//}
+
+
 
 void ResetTickAvg(){
   for(int i = 0; i < sizeof(ticks_avg)/sizeof(float); i++)
@@ -53,7 +73,7 @@ float CalculateVelocityFromTickDelta(float deltaTick, double deltaTime){
 
 void CalcluateVelocityCallback(const sensor_msgs::JointState& msg_in){
 
-  //Decrease Noise ---
+  //============== Decrease Noise ==============
   if(skip_counter < noise_remover)
   {
     for(int i = 0; i < sizeof(ticks_avg)/sizeof(float); i++)
@@ -64,7 +84,7 @@ void CalcluateVelocityCallback(const sensor_msgs::JointState& msg_in){
   }
   ResetTickAvg();
   skip_counter = 0;
-  //Decrease Noise ---
+  //============================================
 
   geometry_msgs::TwistStamped msg_out = geometry_msgs::TwistStamped();
 
@@ -128,10 +148,21 @@ int main(int argc, char **argv){
   pub_vel = nh.advertise<geometry_msgs::TwistStamped>("/cmd_vel", 1);
 
   //TODO REMOVE
-  //pub_w = nh.advertise<geometry_msgs::TwistStamped>("/wheel_vel_test", 1);
+  pub_w = nh.advertise<geometry_msgs::TwistStamped>("/wheel_vel_test", 1);
   //TODO REMOVE
 
   //ros::Rate rate(100);
+
+
+  //======== PARAMETERS CALIBRATION =========
+  //Dynamic Reconfigure
+  //dynamic_reconfigure::Server<project1::parametersConfig> server;
+  //dynamic_reconfigure::Server<project1::parametersConfig>::CallbackType f;
+
+  //f = boost::bind(&DynamicReconfigureCallback, _1, _2);
+  //server.setCallback(f);
+  //=========================================
+
 
   ROS_INFO("VELOCITY NODE");
   while(ros::ok()){

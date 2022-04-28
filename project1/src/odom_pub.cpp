@@ -17,17 +17,13 @@
 // ============ DATA ===========
 #define PI 3.14159265359
 
-#define r 0.07
-#define l 0.2
-#define w 0.169
-#define N 42
-#define T 5
-#define N_WHEELS 4
+//#define r 0.07
+//#define l 0.2
+//#define w 0.169
+//#define N 42
+//#define T 5
+//#define N_WHEELS 4
 // =============================
-
-const float r = 0.07;
-const float l = 0.2;
-const float w = 0.169;
 
 double last_time = 1.7976931348623157E+308; //Time initialized to infinity
 float last_x, last_y, last_theta;
@@ -58,7 +54,7 @@ void DynamicReconfigureCallback(project1::parametersConfig &config, uint32_t lev
 void CalculateDeltas(float vx, float vy, float omega, double dt)
 {
   //Calculate deltas referred to robot frame
-  if(w != 0){
+  if(omega != 0){
     delta_x_b = (vx * sin(omega) + vy * (cos(omega) - 1)) / omega * dt;
     delta_y_b = (vy * sin(omega) + vx * (1 - cos(omega))) / omega * dt;
     delta_theta_b = omega * dt;
