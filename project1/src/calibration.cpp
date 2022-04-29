@@ -4,10 +4,6 @@
 #include <sensor_msgs/JointState.h>
 #include <std_msgs/Time.h>
 
-#define PI 3.14159265359
-
-
-
 
 int main(int argc, char **argv){
 

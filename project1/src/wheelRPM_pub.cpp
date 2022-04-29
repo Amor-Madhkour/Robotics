@@ -1,5 +1,5 @@
 #include <ros/ros.h>
-//#include <data/data.h>
+#include "data.h"
 
 #include <geometry_msgs/TwistStamped.h>
 #include <geometry_msgs/PoseStamped.h>
@@ -7,17 +7,6 @@
 #include <project1/StampedWheelRPM.h>
 
 #include <math.h> 
-
-// ============ DATA ===========
-#define PI 3.14159265359
-
-#define r 0.07
-#define l 0.2
-#define w 0.169
-#define N 42
-#define T 5
-#define N_WHEELS 4
-// =============================
 
 class odom_pub {
 
@@ -44,10 +33,10 @@ public:
     msg_out.header.frame_id = msg_in.header.frame_id;
     
     //TODO VERIFICA SE VA DIVISO PER 2PI
-    msg_out.rpm_fl = (msg_in.twist.linear.x - msg_in.twist.linear.y + (-l-w) * msg_in.twist.angular.z) / r * 60;
-    msg_out.rpm_fr = (msg_in.twist.linear.x + msg_in.twist.linear.y + (l+w) * msg_in.twist.angular.z) / r * 60;
-    msg_out.rpm_rl = (msg_in.twist.linear.x + msg_in.twist.linear.y + (-l-w) * msg_in.twist.angular.z) / r * 60;
-    msg_out.rpm_rr = (msg_in.twist.linear.x - msg_in.twist.linear.y + (l+w) * msg_in.twist.angular.z) / r * 60;
+    msg_out.rpm_fl = (msg_in.twist.linear.x - msg_in.twist.linear.y + (-L_LENGTH-W_LENGTH) * msg_in.twist.angular.z) / WHEEL_RADIUS * 60;
+    msg_out.rpm_fr = (msg_in.twist.linear.x + msg_in.twist.linear.y + (L_LENGTH+W_LENGTH) * msg_in.twist.angular.z) / WHEEL_RADIUS * 60;
+    msg_out.rpm_rl = (msg_in.twist.linear.x + msg_in.twist.linear.y + (-L_LENGTH-W_LENGTH) * msg_in.twist.angular.z) / WHEEL_RADIUS * 60;
+    msg_out.rpm_rr = (msg_in.twist.linear.x - msg_in.twist.linear.y + (L_LENGTH+W_LENGTH) * msg_in.twist.angular.z) / WHEEL_RADIUS * 60;
 
     //Publish WheelRPM
     pub_wheelRPM.publish(msg_out);

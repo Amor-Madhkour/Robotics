@@ -209,6 +209,8 @@ include_directories(
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
 
+include_directories(include ${catkin_INCLUDE_DIRS})
+
 add_executable(vel_pub src/vel_pub.cpp)
 add_dependencies(vel_pub ${catkin_EXPORTED_TARGETS})
 target_link_libraries(vel_pub ${catkin_LIBRARIES})

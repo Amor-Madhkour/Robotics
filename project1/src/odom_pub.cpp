@@ -1,5 +1,5 @@
 #include <ros/ros.h>
-//#include "data.h"
+#include "data.h"
 
 #include <geometry_msgs/TwistStamped.h>
 #include <nav_msgs/Odometry.h>
@@ -10,10 +10,6 @@
 #include <math.h> 
 
 #include <project1/Reset.h>
-
-// ============ DATA ===========
-#define PI 3.14159265359
-// =============================
 
 struct odom_struct {
   float x;

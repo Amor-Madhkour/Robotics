@@ -1,5 +1,5 @@
 #include <ros/ros.h>
-//#include <data/data.h>
+#include "data.h"
 
 #include <geometry_msgs/TwistStamped.h>
 #include <nav_msgs/Odometry.h>
@@ -11,30 +11,10 @@
 //#include <project1/parametersConfig.h>
 //  //=========================================
 
-// ============ DATA ===========
-#define PI 3.14159265359
-
-#define r 0.07
-#define l 0.2
-#define w 0.169
-#define N 42
-#define T 5
-#define N_WHEELS 4
-// =============================
-
-
-//void DynamicReconfigureCallback(project1::parametersConfig &config, uint32_t level) {
-//
-//  //======== PARAMETERS CALIBRATION =========
-//  r = config.r;
-//  l = config.l;
-//  w = config.w;
-//  N = config.N;
-//  //=========================================
-//}
 
 class vel_pub 
 {
+  //float r, l, w, N; //REMOVE
 
 // ================ ATTRIBUTES ================
 private:
@@ -67,16 +47,6 @@ public:
     //TODO REMOVE
     //pub_w = nh.advertise<geometry_msgs::TwistStamped>("/wheel_vel_test", 1);
     //TODO REMOVE
-
-
-    //======== PARAMETERS CALIBRATION =========
-    //Dynamic Reconfigure
-    //dynamic_reconfigure::Server<project1::parametersConfig> server;
-    //dynamic_reconfigure::Server<project1::parametersConfig>::CallbackType f;
-
-    //f = boost::bind(&DynamicReconfigureCallback, _1, _2);
-    //server.setCallback(f);
-    //=========================================
   }
 
 
@@ -97,11 +67,19 @@ public:
   }
 
   float CalculateVelocityFromTickDelta(float deltaTick, double deltaTime){
-    return (2 * PI * (deltaTick / deltaTime) / N) / T;
+    return (2 * PI * (deltaTick / deltaTime) / N_ENCODER) / GEAR_RATIO;
   }
 
 
   void CalcluateVelocityCallback(const sensor_msgs::JointState& msg_in){
+
+    // ============= PARAMETERS CALIBRATION =============
+    //nh.getParam("/integration_mode/r", r);
+    //nh.getParam("/integration_mode/l", l);
+    //nh.getParam("/integration_mode/w", w);
+    //nh.getParam("/integration_mode/N", N);
+    //ROS_INFO("%f, %f, %f, %f", r, l, w, N);
+    // ==================================================
 
     //============== Decrease Noise ==============
     if(skip_counter < noise_remover)
@@ -128,12 +106,12 @@ public:
         //wheels_velocity[i] = msg_in.velocity[i] / T / 60; //SOLO DEBUG
       }
 
-      float vx = r * (wheels_velocity[0] + wheels_velocity[1] + wheels_velocity[2] + wheels_velocity[3]) / 4;
+      float vx = WHEEL_RADIUS * (wheels_velocity[0] + wheels_velocity[1] + wheels_velocity[2] + wheels_velocity[3]) / 4;
 
-      float vy = r * (- wheels_velocity[0] + wheels_velocity[1] + wheels_velocity[2] - wheels_velocity[3]) / 4;
+      float vy = WHEEL_RADIUS * (- wheels_velocity[0] + wheels_velocity[1] + wheels_velocity[2] - wheels_velocity[3]) / 4;
       //float vy = r * (- wheels_velocity[0] + wheels_velocity[1] - wheels_velocity[2] + wheels_velocity[3]) / 4;
 
-      float omega = r * (- wheels_velocity[0] + wheels_velocity[1] - wheels_velocity[2] + wheels_velocity[3]) / (4 * (l + w));
+      float omega = WHEEL_RADIUS * (- wheels_velocity[0] + wheels_velocity[1] - wheels_velocity[2] + wheels_velocity[3]) / (4 * (L_LENGTH + W_LENGTH));
       //float omega = r * (- wheels_velocity[0] + wheels_velocity[1] + wheels_velocity[2] - wheels_velocity[3]) / (4 * (l + w));
 
       //Setup message out
