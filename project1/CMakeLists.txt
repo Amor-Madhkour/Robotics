@@ -220,3 +220,7 @@ target_link_libraries(odom_pub ${catkin_LIBRARIES})
 add_executable(wheelRPM_pub src/wheelRPM_pub.cpp)
 add_dependencies(wheelRPM_pub ${catkin_EXPORTED_TARGETS})
 target_link_libraries(wheelRPM_pub ${catkin_LIBRARIES})
+
+add_executable(integration_mode src/integration_mode.cpp)
+add_dependencies(integration_mode ${catkin_EXPORTED_TARGETS})
+target_link_libraries(integration_mode ${catkin_LIBRARIES})
