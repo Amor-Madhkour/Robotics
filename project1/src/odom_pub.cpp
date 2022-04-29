@@ -1,5 +1,5 @@
 #include <ros/ros.h>
-//#include <data/data.h>
+//#include "data.h"
 
 #include <geometry_msgs/TwistStamped.h>
 #include <nav_msgs/Odometry.h>
@@ -13,12 +13,6 @@
 
 // ============ DATA ===========
 #define PI 3.14159265359
-
-#define r 0.07
-#define l 0.2
-#define w 0.169
-#define N 42
-#define T 5
 // =============================
 
 struct odom_struct {
@@ -99,7 +93,7 @@ public:
 
     //Calculate deltas referred to odom with EULER
     last_odom.x += deltas_b.x * cos(last_odom.theta) - deltas_b.y * sin(last_odom.theta);
-    last_odom.y += deltas_b.y * sin(last_odom.theta) + deltas_b.y * cos(last_odom.theta);
+    last_odom.y += deltas_b.x * sin(last_odom.theta) + deltas_b.y * cos(last_odom.theta);
     last_odom.theta += deltas_b.theta;
   }
 
