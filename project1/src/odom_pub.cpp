@@ -9,7 +9,7 @@
 
 #include <math.h> 
 
-#include <project1/Reset.h>
+#include <project1/reset_odom.h>
 
 struct odom_struct {
   float x;
@@ -33,7 +33,6 @@ private:
   odom_struct initial_odom, last_odom;
 
   //odom frame position
-  double x, y, theta; //FIX or REMOVE
   enum integration_mode {EULER, RK};
   int current_integration;
 
@@ -53,7 +52,7 @@ public:
     pub_odom = nh.advertise<nav_msgs::Odometry>("/odom", 1);
 
     //Set service
-    set_srv = nh.advertiseService("set_odom", &odom_pub::reset, this);
+    set_srv = nh.advertiseService("reset_odom", &odom_pub::ResetOdom, this);
   }
 
 
@@ -166,14 +165,17 @@ public:
     //send the transform
     odom_broadcaster.sendTransform(odom_trans);
   }
-  bool reset(project1::Reset::Request &req, project1::Reset::Response &res)
+
+  //======================= SERVICE ====================
+  bool ResetOdom(project1::reset_odom::Request &req, project1::reset_odom::Response &res)
   {
-      x = req.new_x;
-      y = req.new_y;
-      theta = req.new_theta;
-      ROS_INFO("Odom has been set to ([%f],[%f],[%f])", req.new_x, req.new_y, req.new_theta);
+      last_odom.x = req.new_x;
+      last_odom.y = req.new_y;
+      last_odom.theta = req.new_theta;
+      ROS_INFO("Odom has been set to ([%f],[%f],[%f])", last_odom.x, last_odom.y, last_odom.theta);
       return true;
   }
+  //=====================================================
 };
 
 int main(int argc, char **argv){
