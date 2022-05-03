@@ -10,7 +10,5 @@
     <node pkg="project1" type="vel_pub" name="vel_pub" output="screen" launch-prefix="gnome-terminal --command" />
     <node pkg="project1" type="odom_pub" name="odom_pub" output="screen" launch-prefix="gnome-terminal --command" />
     <node pkg="project1" type="wheelRPM_pub" name="wheelRPM_pub" output="screen" launch-prefix="gnome-terminal --command" />
-    <node pkg="tf2_ros" type="static_transform_publisher" name="world"
-           args="0 0 0
-            0 0 0 1 world odom"/>
+    <node pkg="tf2_ros" type="static_transform_publisher" name="world" args="0 0 0 0 0 0 1 world odom"/>
 </launch>

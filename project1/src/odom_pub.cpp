@@ -1,17 +1,14 @@
 #include <ros/ros.h>
 #include "data.h"
-
+#include <project1/Odom.h>
 #include <geometry_msgs/TwistStamped.h>
-#include <nav_msgs/Odometry.h>
+//#include <nav_msgs/Odometry.h>
 #include <sensor_msgs/JointState.h>
 
 #include <tf/transform_broadcaster.h>
 #include <math.h> 
 #include <project1/reset_odom.h>
 
-#include <tf2/LinearMath/Quaternion.h>
-#include <tf2_ros/transform_broadcaster.h>
-#include <geometry_msgs/TransformStamped.h>
 
 struct odom_struct {
   float x;
@@ -29,10 +26,9 @@ private:
   ros::Publisher pub_odom;
   ros::ServiceServer set_srv;
   ros::Subscriber sub_vel;
-  ros::Subscriber sub_odom;
-  tf::TransformBroadcaster odom_broadcaster;
+ /* tf::TransformBroadcaster odom_broadcaster;
   geometry_msgs::TransformStamped odom_trans;
-  tf2::Quaternion myQuat;
+  */
   //Calculations
   double last_time = 1.7976931348623157E+308; //Time initialized to infinity
   odom_struct initial_odom, last_odom;
@@ -53,12 +49,13 @@ public:
 
     //Subscribe to cmd_vel
     sub_vel = nh.subscribe("/cmd_vel", 1, &odom_pub::CalcluateOdometryCallback, this);
-    //Amor tf2
-    sub_odom = nh.subscribe("/odom", 1, &odom_pub::BroadcastTF, this);
-   
-
+    
     //Setup publisher odom
-    pub_odom = nh.advertise<nav_msgs::Odometry>("/odom", 1);
+    //pub_odom = nh.advertise<nav_msgs::Odometry>("/odom", 1);
+
+
+    //Amor try
+    pub_odom = nh.advertise<project1::Odom>("my_odom", 1);
 
     //Set service
     set_srv = nh.advertiseService("reset_odom", &odom_pub::ResetOdom, this);
@@ -125,6 +122,7 @@ public:
     }
 
     nh.getParam("/integration_mode/integration_mode", current_integration);
+
     //Integrate in the modality specified by the parameter 
     if(current_integration == integration_mode::EULER)
       Euler(msg_in.twist.linear.x, msg_in.twist.linear.y, msg_in.twist.angular.z, msg_in.header.stamp.toSec() - last_time);
@@ -154,6 +152,57 @@ public:
       ROS_INFO("Integration_mode: RK");
     ROS_INFO("x: %f, y: %f, theta: %f", last_odom.x, last_odom.y, last_odom.theta);
   }
+
+    //TODO
+  /*void CalcluateOdometryCallback(const geometry_msgs::TwistStamped::ConstPtr& msg_in){
+
+    nav_msgs::Odometry msg_out = nav_msgs::Odometry();
+
+    //Reset position if the bag restarts
+    if(last_time > msg_in.header.stamp.toSec())
+    {
+      last_time = msg_in.header.stamp.toSec();
+      SetInitialPositions(); //TO BE REMOVED
+      return;
+    }
+
+    nh.getParam("/integration_mode/integration_mode", current_integration);
+    
+    //Integrate in the modality specified by the parameter 
+    if(current_integration == integration_mode::EULER)
+      Euler(msg_in.twist.linear.x, msg_in.twist.linear.y, msg_in.twist.angular.z, msg_in.header.stamp.toSec() - last_time);
+    else
+      RungeKutta(msg_in.twist.linear.x, msg_in.twist.linear.y, msg_in.twist.angular.z, msg_in.header.stamp.toSec() - last_time);
+    
+    //Roba New
+    last_time = msg_in.header.stamp.toSec();
+    publish_msg(msg_in);
+    }
+
+    void publish_msg(const geometry_msgs::TwistStamped::ConstPtr& msg_in) 
+    {
+        msg_out.odom.header.stamp = msg_in->header.stamp;
+        msg_out.odom.header.seq = msg_in->header.seq;
+        msg_out.odom.header.frame_id = "odom";
+        msg_out.odom.child_frame_id = "base_link";
+   
+        msg_out.pose.pose.position.x = last_odom.x;
+        msg_out.pose.pose.position.y = last_odom.y;
+        msg_out.pose.pose.position.z = last_odom.y;
+        msg_out.pose.pose.orientation = tf::createQuaternionMsgFromYaw(last_odom.theta);
+
+        pub.publish(msg);
+ 
+    }
+    
+
+    
+    
+    
+  
+  }
+
+  */
 
   void BroadcastTF(const geometry_msgs::TwistStamped& msg_in)
   {
