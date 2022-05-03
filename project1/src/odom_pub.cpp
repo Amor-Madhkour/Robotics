@@ -6,10 +6,12 @@
 #include <sensor_msgs/JointState.h>
 
 #include <tf/transform_broadcaster.h>
-
 #include <math.h> 
-
 #include <project1/reset_odom.h>
+
+#include <tf2/LinearMath/Quaternion.h>
+#include <tf2_ros/transform_broadcaster.h>
+#include <geometry_msgs/TransformStamped.h>
 
 struct odom_struct {
   float x;
@@ -27,7 +29,10 @@ private:
   ros::Publisher pub_odom;
   ros::ServiceServer set_srv;
   ros::Subscriber sub_vel;
-
+  ros::Subscriber sub_odom;
+  tf::TransformBroadcaster odom_broadcaster;
+  geometry_msgs::TransformStamped odom_trans;
+  tf2::Quaternion myQuat;
   //Calculations
   double last_time = 1.7976931348623157E+308; //Time initialized to infinity
   odom_struct initial_odom, last_odom;
@@ -35,6 +40,7 @@ private:
   //odom frame position
   enum integration_mode {EULER, RK};
   int current_integration;
+
 
 
 // =============== CONSTRUCTOR ===============
@@ -47,6 +53,9 @@ public:
 
     //Subscribe to cmd_vel
     sub_vel = nh.subscribe("/cmd_vel", 1, &odom_pub::CalcluateOdometryCallback, this);
+    //Amor tf2
+    sub_odom = nh.subscribe("/odom", 1, &odom_pub::BroadcastTF, this);
+   
 
     //Setup publisher odom
     pub_odom = nh.advertise<nav_msgs::Odometry>("/odom", 1);
@@ -135,7 +144,7 @@ public:
     //Publish odom
     pub_odom.publish(msg_out);
 
-    BroadcastTF(last_odom.x, last_odom.y, last_odom.theta, msg_in.header.stamp);
+    //BroadcastTF(last_odom.x, last_odom.y, last_odom.theta, msg_in.header.stamp);
    
     
     
@@ -146,15 +155,29 @@ public:
     ROS_INFO("x: %f, y: %f, theta: %f", last_odom.x, last_odom.y, last_odom.theta);
   }
 
+  void BroadcastTF(const geometry_msgs::TwistStamped& msg_in)
+  {
+    //publish the transform over tf
+    ROS_INFO("fuck fuck fuck fuck");
+    odom_trans.header.stamp = ros::Time::now();
+    odom_trans.header.frame_id = "odom";
+    odom_trans.child_frame_id = "base_link";
+    myQuat.setRPY(0,0,last_odom.theta);
+    odom_trans.transform.translation.x = last_odom.x;
+    odom_trans.transform.translation.y = last_odom.y;
+    odom_trans.transform.translation.z = 0.0;
+    odom_trans.transform.rotation.w = myQuat.w();// tf::createQuaternionMsgFromYaw(th);;
+
+    //send the transform
+    odom_broadcaster.sendTransform(odom_trans);
+  }/*
 
   void BroadcastTF(float x, float y, float th,  ros::Time timeStamp)
   {
     //http://wiki.ros.org/navigation/Tutorials/RobotSetup/Odom
 
-    tf::TransformBroadcaster odom_broadcaster;
-
     //publish the transform over tf
-    geometry_msgs::TransformStamped odom_trans;
+    
     odom_trans.header.stamp = timeStamp;
     odom_trans.header.frame_id = "odom";
     odom_trans.child_frame_id = "base_link";
@@ -166,7 +189,7 @@ public:
 
     //send the transform
     odom_broadcaster.sendTransform(odom_trans);
-  }
+  }*/
 
   
   //======================= SERVICE ====================
