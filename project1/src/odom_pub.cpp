@@ -135,8 +135,10 @@ public:
     //Publish odom
     pub_odom.publish(msg_out);
 
-    //BroadcastTF(msg_out.twist.linear.x, msg_out.twist.linear.y, msg_out.twist.angular.z, msg_in.header.stamp);
-
+    BroadcastTF(last_odom.x, last_odom.y, last_odom.theta, msg_in.header.stamp);
+   
+    
+    
     if(current_integration==integration_mode::EULER)
       ROS_INFO("Integration_mode: Euler");
     else
@@ -166,6 +168,7 @@ public:
     odom_broadcaster.sendTransform(odom_trans);
   }
 
+  
   //======================= SERVICE ====================
   bool ResetOdom(project1::reset_odom::Request &req, project1::reset_odom::Response &res)
   {

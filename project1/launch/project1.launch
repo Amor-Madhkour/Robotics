@@ -4,10 +4,13 @@
     <param name="initial_x" value="0"/>
     <param name="initial_y" value="0"/> //0.04 nel bag 3
     <param name="initial_theta" value="0"/>
+    <param name="use_sim_time" value="true"/>
 
     <node pkg="project1" type="integration_mode" name="integration_mode"/>
     <node pkg="project1" type="vel_pub" name="vel_pub" output="screen" launch-prefix="gnome-terminal --command" />
     <node pkg="project1" type="odom_pub" name="odom_pub" output="screen" launch-prefix="gnome-terminal --command" />
     <node pkg="project1" type="wheelRPM_pub" name="wheelRPM_pub" output="screen" launch-prefix="gnome-terminal --command" />
-
+    <node pkg="tf2_ros" type="static_transform_publisher" name="world"
+           args="0 0 0
+            0 0 0 1 world odom"/>
 </launch>

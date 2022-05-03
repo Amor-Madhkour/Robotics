@@ -4,6 +4,7 @@
 #include <sensor_msgs/JointState.h>
 #include <std_msgs/Time.h>
 
+#include "vel_pub.h"
 
 int main(int argc, char **argv){
 

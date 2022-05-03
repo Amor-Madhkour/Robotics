@@ -14,9 +14,9 @@ int main(int argc, char** argv)
     ros::service::waitForService("reset_odom");
     ros::ServiceClient set_pos = n.serviceClient<project1::reset_odom>("reset_odom");
     project1 ::reset_odom srv;
-    srv.request.x = atoll(argv[1]);
-    srv.request.y = atoll(argv[2]);
-    srv.request.theta = atoll(argv[3]);
+    srv.request.new_x= atoll(argv[1]);
+    srv.request.new_y = atoll(argv[2]);
+    srv.request.new_theta = atoll(argv[3]);
 
     if (set_pos.call(srv))
     {
