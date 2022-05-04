@@ -31,7 +31,7 @@ private:
   float last_ticks[4] = {0, 0, 0, 0};
 
   //Utility
-  const int noise_remover = 3;
+  const int noise_remover = 2;
   int skip_counter = 0;
   float ticks_avg[4];
 
@@ -73,10 +73,10 @@ public:
   void CalcluateVelocityCallback(const sensor_msgs::JointState& msg_in){
 
     // ============= PARAMETERS CALIBRATION =============
-    //nh.getParam("/integration_mode/r", r);
-    //nh.getParam("/integration_mode/l", l);
-    //nh.getParam("/integration_mode/w", w);
-    //nh.getParam("/integration_mode/N", N);
+    //nh.getParam("/dynamic_reconfigure/r", r);
+    //nh.getParam("/dynamic_reconfigure/l", l);
+    //nh.getParam("/dynamic_reconfigure/w", w);
+    //nh.getParam("/dynamic_reconfigure/N", N);
     //ROS_INFO("%f, %f, %f, %f", r, l, w, N);
     // ==================================================
 
