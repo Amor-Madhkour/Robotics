@@ -70,6 +70,3 @@ add_executable(dynamic_reconfigure src/dynamic_reconfigure.cpp)
 add_dependencies(dynamic_reconfigure ${catkin_EXPORTED_TARGETS})
 target_link_libraries(dynamic_reconfigure ${catkin_LIBRARIES})
 
-add_executable(transform_manager src/transform_manager.cpp)
-add_dependencies(transform_manager ${catkin_EXPORTED_TARGETS})
-target_link_libraries(transform_manager ${catkin_LIBRARIES})

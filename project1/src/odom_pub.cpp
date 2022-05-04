@@ -26,13 +26,12 @@ private:
   ros::Publisher pub_odom;
   ros::ServiceServer set_srv;
   ros::Subscriber sub_vel;
-
+  tf2_ros::TransformBroadcaster odom_broadcaster;
+  
   tf::TransformBroadcaster br;
   tf::Transform odom_transform;
   tf2::Quaternion myQuat;
- /* tf::TransformBroadcaster odom_broadcaster;
-  geometry_msgs::TransformStamped odom_trans;
-  */
+ 
   //Calculations
   double last_time = 1.7976931348623157E+308; //Time initialized to infinity
   odom_struct initial_odom, last_odom;
@@ -57,13 +56,10 @@ public:
 
     //Subscribe to cmd_vel
     sub_vel = nh.subscribe("/cmd_vel", 1, &odom_pub::CalcluateOdometryCallback, this);
-    
+   
     //Setup publisher odom
     pub_odom = nh.advertise<nav_msgs::Odometry>("/odom", 1);
 
-
-    //Amor try
-    //pub_odom = nh.advertise<project1::Odom>("my_odom", 1);
 
     //Set service
     set_srv = nh.advertiseService("reset_odom", &odom_pub::ResetOdom, this);
@@ -170,16 +166,18 @@ public:
     msg_out.header.frame_id = "base_link";
     msg_out.pose.pose.position.x = last_odom.x;
     msg_out.pose.pose.position.y = last_odom.y;
-    msg_out.pose.pose.orientation = tf::createQuaternionMsgFromYaw(last_odom.theta);
-
+    msg_out.pose.pose.position.z = 0.0;
     myQuat.setRPY(0,0,last_odom.theta);
-
+    
+    msg_out.pose.pose.orientation.x = myQuat.x();
+    msg_out.pose.pose.orientation.y= myQuat.y();
+    msg_out.pose.pose.orientation.z = myQuat.z();
+    msg_out.pose.pose.orientation.w = myQuat.w();
+    
     //Publish odom
     pub_odom.publish(msg_out);
 
-    //BroadcastTF(last_odom.x, last_odom.y, last_odom.theta, msg_in.header.stamp);
-   
-    
+    BroadcastTF(msg_out.pose.pose.position.x, msg_out.pose.pose.position.y,msg_out.pose.pose.orientation.w, msg_in.header.stamp);
     
     if(current_integration==integration_mode::EULER)
       ROS_INFO("Integration_mode: Euler");
@@ -188,75 +186,10 @@ public:
     ROS_INFO("x: %f, y: %f, theta: %f", last_odom.x, last_odom.y, last_odom.theta);
   }
 
-    //TODO
-  /*void CalcluateOdometryCallback(const geometry_msgs::TwistStamped::ConstPtr& msg_in){
-
-    nav_msgs::Odometry msg_out = nav_msgs::Odometry();
-
-    //Reset position if the bag restarts
-    if(last_time > msg_in.header.stamp.toSec())
-    {
-      last_time = msg_in.header.stamp.toSec();
-      SetInitialPositions(); //TO BE REMOVED
-      return;
-    }
-
-    nh.getParam("/integration_mode/integration_mode", current_integration);
-    
-    //Integrate in the modality specified by the parameter 
-    if(current_integration == integration_mode::EULER)
-      Euler(msg_in.twist.linear.x, msg_in.twist.linear.y, msg_in.twist.angular.z, msg_in.header.stamp.toSec() - last_time);
-    else
-      RungeKutta(msg_in.twist.linear.x, msg_in.twist.linear.y, msg_in.twist.angular.z, msg_in.header.stamp.toSec() - last_time);
-    
-    //Roba New
-    last_time = msg_in.header.stamp.toSec();
-    publish_msg(msg_in);
-    }
-
-    void publish_msg(const geometry_msgs::TwistStamped::ConstPtr& msg_in) 
-    {
-        msg_out.odom.header.stamp = msg_in->header.stamp;
-        msg_out.odom.header.seq = msg_in->header.seq;
-        msg_out.odom.header.frame_id = "odom";
-        msg_out.odom.child_frame_id = "base_link";
-   
-        msg_out.pose.pose.position.x = last_odom.x;
-        msg_out.pose.pose.position.y = last_odom.y;
-        msg_out.pose.pose.position.z = last_odom.y;
-        msg_out.pose.pose.orientation = tf::createQuaternionMsgFromYaw(last_odom.theta);
-
-        pub.publish(msg);
- 
-    } 
-  }
-
-  */
-  /*
-  void BroadcastTF(const geometry_msgs::TwistStamped& msg_in)
-  {
-    //publish the transform over tf
-    ROS_INFO("fuck fuck fuck fuck");
-    odom_trans.header.stamp = ros::Time::now();
-    odom_trans.header.frame_id = "odom";
-    odom_trans.child_frame_id = "base_link";
-    myQuat.setRPY(0,0,last_odom.theta);
-    odom_trans.transform.translation.x = last_odom.x;
-    odom_trans.transform.translation.y = last_odom.y;
-    odom_trans.transform.translation.z = 0.0;
-    odom_trans.transform.rotation.w = myQuat.w();// tf::createQuaternionMsgFromYaw(th);;
-
-    //send the transform
-    odom_broadcaster.sendTransform(odom_trans);
-
-  }
-
   void BroadcastTF(float x, float y, float th,  ros::Time timeStamp)
   {
-    //http://wiki.ros.org/navigation/Tutorials/RobotSetup/Odom
-
     //publish the transform over tf
-    
+    geometry_msgs::TransformStamped odom_trans;
     odom_trans.header.stamp = timeStamp;
     odom_trans.header.frame_id = "odom";
     odom_trans.child_frame_id = "base_link";
@@ -264,16 +197,21 @@ public:
     odom_trans.transform.translation.x = x;
     odom_trans.transform.translation.y = y;
     odom_trans.transform.translation.z = 0.0;
-    odom_trans.transform.rotation = tf::createQuaternionMsgFromYaw(th);;
-
+    
+    odom_trans.transform.rotation.x = myQuat.x();
+    odom_trans.transform.rotation.y = myQuat.y();
+    odom_trans.transform.rotation.z = myQuat.z();
+    odom_trans.transform.rotation.w = myQuat.w();
+  
     //send the transform
     odom_broadcaster.sendTransform(odom_trans);
-  }*/
+  }
 
   
   //======================= SERVICE ====================
   bool ResetOdom(project1::reset_odom::Request &req, project1::reset_odom::Response &res)
   {
+
       //Recalculate position of odom relative to the desired base_link new pose
       odom_struct new_transform;
       new_transform.x = last_odom.x - req.new_x;
