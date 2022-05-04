@@ -164,12 +164,18 @@ public:
     msg_out.header.frame_id = "base_link";
     msg_out.pose.pose.position.x = pose_odom.x;
     msg_out.pose.pose.position.y = pose_odom.y;
-    msg_out.pose.pose.orientation = tf::createQuaternionMsgFromYaw(pose_odom.theta);
+    
+    tf2::Quaternion myQuat;
+    myQuat.setRPY(0,0,last_odom.theta);
+    msg_out.pose.pose.orientation.x = myQuat.x();
+    msg_out.pose.pose.orientation.y= myQuat.y();
+    msg_out.pose.pose.orientation.z = myQuat.z();
+    msg_out.pose.pose.orientation.w = myQuat.w();
 
     //Publish odom
     pub_odom.publish(msg_out);
 
-    //BroadcastTF(pose_world.x, pose_world.y, pose_world.theta, msg_in.header.stamp);
+    BroadcastTF(msg_out.pose.pose.position.x, msg_out.pose.pose.position.y,msg_out.pose.pose.orientation.w, msg_in.header.stamp);
     
     if(current_integration==integration_mode::EULER)
       ROS_INFO("Integration_mode: Euler");
@@ -224,7 +230,7 @@ public:
   }
 
   */
-  /*
+
   void BroadcastTF(const geometry_msgs::TwistStamped& msg_in)
   {
     //publish the transform over tf
@@ -236,13 +242,20 @@ public:
     odom_trans.transform.translation.x = pose_world.x;
     odom_trans.transform.translation.y = pose_world.y;
     odom_trans.transform.translation.z = 0.0;
-    odom_trans.transform.rotation.w = myQuat.w();// tf::createQuaternionMsgFromYaw(th);;
+    
+    tf2::Quaternion myQuat;
+    myQuat.setRPY(0,0,last_odom.theta);
+    odom_trans.transform.rotation.x = myQuat.x();
+    odom_trans.transform.rotation.y = myQuat.y();
+    odom_trans.transform.rotation.z = myQuat.z();
+    odom_trans.transform.rotation.w = myQuat.w();
 
     //send the transform
     odom_broadcaster.sendTransform(odom_trans);
 
   }
 
+  /*
   void BroadcastTF(float x, float y, float th,  ros::Time timeStamp)
   {
     //http://wiki.ros.org/navigation/Tutorials/RobotSetup/Odom
