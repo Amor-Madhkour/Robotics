@@ -30,7 +30,6 @@ private:
   
   tf::TransformBroadcaster br;
   tf::Transform odom_transform;
-  tf2::Quaternion myQuat;
  
   //Calculations
   double last_time = 1.7976931348623157E+308; //Time initialized to infinity
@@ -167,6 +166,8 @@ public:
     msg_out.pose.pose.position.x = last_odom.x;
     msg_out.pose.pose.position.y = last_odom.y;
     msg_out.pose.pose.position.z = 0.0;
+
+    tf2::Quaternion myQuat;
     myQuat.setRPY(0,0,last_odom.theta);
     
     msg_out.pose.pose.orientation.x = myQuat.x();
@@ -198,6 +199,8 @@ public:
     odom_trans.transform.translation.y = y;
     odom_trans.transform.translation.z = 0.0;
     
+    tf2::Quaternion myQuat;
+    myQuat.setRPY(0,0,last_odom.theta);
     odom_trans.transform.rotation.x = myQuat.x();
     odom_trans.transform.rotation.y = myQuat.y();
     odom_trans.transform.rotation.z = myQuat.z();
