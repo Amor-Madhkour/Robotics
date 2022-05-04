@@ -10,7 +10,7 @@ void DynamicReconfigureCallback(project1::parametersConfig &config, uint32_t lev
 
 int main(int argc, char **argv){
 
-    ros::init(argc, argv, "integration_mode");
+    ros::init(argc, argv, "dynamic_reconfigure");
 
     //Set dynamic reconfigure
     dynamic_reconfigure::Server<project1::parametersConfig> server;

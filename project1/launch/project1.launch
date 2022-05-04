@@ -6,7 +6,7 @@
     <param name="initial_theta" value="0"/>
     <param name="use_sim_time" value="true"/>
 
-    <node pkg="project1" type="integration_mode" name="integration_mode"/>
+    <node pkg="project1" type="dynamic_reconfigure" name="dynamic_reconfigure"/>
     <node pkg="project1" type="vel_pub" name="vel_pub" output="screen" launch-prefix="gnome-terminal --command" />
     <node pkg="project1" type="odom_pub" name="odom_pub" output="screen" launch-prefix="gnome-terminal --command" />
     <node pkg="project1" type="wheelRPM_pub" name="wheelRPM_pub" output="screen" launch-prefix="gnome-terminal --command" />
