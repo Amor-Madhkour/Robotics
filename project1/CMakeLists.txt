@@ -69,3 +69,7 @@ target_link_libraries(wheelRPM_pub ${catkin_LIBRARIES})
 add_executable(integration_mode src/integration_mode.cpp)
 add_dependencies(integration_mode ${catkin_EXPORTED_TARGETS})
 target_link_libraries(integration_mode ${catkin_LIBRARIES})
+
+add_executable(tf2 src/tf2.cpp)
+add_dependencies(tf2 ${catkin_EXPORTED_TARGETS})
+target_link_libraries(tf2 ${catkin_LIBRARIES})

@@ -1,10 +1,10 @@
 #include <ros/ros.h>
 #include "data.h"
-#include <project1/Odom.h>
-#include <geometry_msgs/TwistStamped.h>
-//#include <nav_msgs/Odometry.h>
-#include <sensor_msgs/JointState.h>
 
+#include <geometry_msgs/TwistStamped.h>
+#include <nav_msgs/Odometry.h>
+#include <sensor_msgs/JointState.h>
+#include <tf2/LinearMath/Quaternion.h>
 #include <tf/transform_broadcaster.h>
 #include <math.h> 
 #include <project1/reset_odom.h>
@@ -26,9 +26,8 @@ private:
   ros::Publisher pub_odom;
   ros::ServiceServer set_srv;
   ros::Subscriber sub_vel;
- /* tf::TransformBroadcaster odom_broadcaster;
-  geometry_msgs::TransformStamped odom_trans;
-  */
+  tf2::Quaternion myQuat;
+
   //Calculations
   double last_time = 1.7976931348623157E+308; //Time initialized to infinity
   odom_struct initial_odom, last_odom;
@@ -51,11 +50,7 @@ public:
     sub_vel = nh.subscribe("/cmd_vel", 1, &odom_pub::CalcluateOdometryCallback, this);
     
     //Setup publisher odom
-    //pub_odom = nh.advertise<nav_msgs::Odometry>("/odom", 1);
-
-
-    //Amor try
-    pub_odom = nh.advertise<project1::Odom>("my_odom", 1);
+    pub_odom = nh.advertise<nav_msgs::Odometry>("/odom", 1);
 
     //Set service
     set_srv = nh.advertiseService("reset_odom", &odom_pub::ResetOdom, this);
@@ -137,6 +132,7 @@ public:
     msg_out.header.frame_id = "odom";
     msg_out.pose.pose.position.x = last_odom.x;
     msg_out.pose.pose.position.y = last_odom.y;
+    myQuat.setRPY(0,0,last_odom.theta);
     msg_out.pose.pose.orientation = tf::createQuaternionMsgFromYaw(last_odom.theta);
 
     //Publish odom
@@ -189,57 +185,21 @@ public:
         msg_out.pose.pose.position.x = last_odom.x;
         msg_out.pose.pose.position.y = last_odom.y;
         msg_out.pose.pose.position.z = last_odom.y;
-        msg_out.pose.pose.orientation = tf::createQuaternionMsgFromYaw(last_odom.theta);
+        myQuat.setRPY(0,0,last_odom.theta);
+        
+        msg_out.pose.pose.orientation.x = tf::createQuaternionMsgFromYaw(last_odom.theta);
+        
+        msg_out.pose.pose.orientation.x = myQuat.orientation.x ;
+        msg_out.pose.pose.orientation.y = myQuat.orientation.y ;
+        msg_out.pose.pose.orientation.z = myQuat.orientation.z;
+        msg_out.pose.pose.orientation.w = myQuat.orientation.w;
 
         pub.publish(msg);
  
     }
     
 
-    
-    
-    
-  
-  }
-
   */
-
-  void BroadcastTF(const geometry_msgs::TwistStamped& msg_in)
-  {
-    //publish the transform over tf
-    ROS_INFO("fuck fuck fuck fuck");
-    odom_trans.header.stamp = ros::Time::now();
-    odom_trans.header.frame_id = "odom";
-    odom_trans.child_frame_id = "base_link";
-    myQuat.setRPY(0,0,last_odom.theta);
-    odom_trans.transform.translation.x = last_odom.x;
-    odom_trans.transform.translation.y = last_odom.y;
-    odom_trans.transform.translation.z = 0.0;
-    odom_trans.transform.rotation.w = myQuat.w();// tf::createQuaternionMsgFromYaw(th);;
-
-    //send the transform
-    odom_broadcaster.sendTransform(odom_trans);
-  }/*
-
-  void BroadcastTF(float x, float y, float th,  ros::Time timeStamp)
-  {
-    //http://wiki.ros.org/navigation/Tutorials/RobotSetup/Odom
-
-    //publish the transform over tf
-    
-    odom_trans.header.stamp = timeStamp;
-    odom_trans.header.frame_id = "odom";
-    odom_trans.child_frame_id = "base_link";
-
-    odom_trans.transform.translation.x = x;
-    odom_trans.transform.translation.y = y;
-    odom_trans.transform.translation.z = 0.0;
-    odom_trans.transform.rotation = tf::createQuaternionMsgFromYaw(th);;
-
-    //send the transform
-    odom_broadcaster.sendTransform(odom_trans);
-  }*/
-
   
   //======================= SERVICE ====================
   bool ResetOdom(project1::reset_odom::Request &req, project1::reset_odom::Response &res)
@@ -250,9 +210,31 @@ public:
       ROS_INFO("Odom has been set to ([%f],[%f],[%f])", last_odom.x, last_odom.y, last_odom.theta);
       return true;
   }
-  //=====================================================
+  
 };
+/*
+//======================= SERVICE ====================
+  bool ResetOdom(project1::reset_odom::Request &req, project1::reset_odom::Response &res)
+  {
+      odom_transform.setOrigin( tf::Vector3(req.new_x, req.new_y, 0) );
+      odom_transform.setRotation( tf::Quaternion(0, 0, req.new_theta) );
+      br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "odom", "base_link"));
 
+      //IL SERVICE DEVE SETTARE LA NUOVA POSIZIONE  DEL FRAME ODOM RISPETTO A WORLD O DI BASE_LINK RISPETTO A ODOM?
+      //Recalculate position of base_link relative to the new odom
+      //Rotation
+      last_odom.x = last_odom.x * cos(req.new_theta) + last_odom.y * sin(req.new_theta);
+      last_odom.y = - last_odom.x * sin(req.new_theta) + last_odom.y * cos(req.new_theta);
+      last_odom.theta = last_odom.theta - req.new_theta;
+
+      //Traslation
+      last_odom.x += req.new_x;
+      last_odom.y += req.new_y;
+
+      ROS_INFO("Odom has been set to ([%f],[%f],[%f])", last_odom.x, last_odom.y, last_odom.theta);
+      return true;
+  }
+*/
 int main(int argc, char **argv){
 
   ros::init(argc, argv, "calculate_odometry");
