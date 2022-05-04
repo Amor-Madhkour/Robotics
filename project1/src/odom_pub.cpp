@@ -106,7 +106,7 @@ public:
     */
 
     deltas_b.x = (vx * cos(last_odom.theta) - vy * sin(last_odom.theta)) * dt;
-    deltas_b.y = (vx * sin(last_odom.theta) - vy * cos(last_odom.theta)) * dt;
+    deltas_b.y = (vx * sin(last_odom.theta) + vy * cos(last_odom.theta)) * dt;
     deltas_b.theta = omega * dt;
 
     last_odom.x += deltas_b.x;
@@ -130,7 +130,7 @@ public:
     */
 
     deltas_b.x = (vx * cos(last_odom.theta + offset) - vy * sin(last_odom.theta + offset)) * dt;
-    deltas_b.y = (vx * sin(last_odom.theta + offset) - vy * cos(last_odom.theta + offset)) * dt;
+    deltas_b.y = (vx * sin(last_odom.theta + offset) + vy * cos(last_odom.theta + offset)) * dt;
     deltas_b.theta = omega * dt;
 
     last_odom.x += deltas_b.x;
