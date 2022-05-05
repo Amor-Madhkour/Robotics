@@ -1,10 +1,23 @@
 <launch>
 
-     <!-- params  -->
-    <param name="initial_x" value="0"/>
-    <param name="initial_y" value="0"/> //0.04 nel bag 3
-    <param name="initial_theta" value="0"/>
-    <param name="use_sim_time" value="true"/>
+    <!-- params  -->
+    <!-- BAG 1 
+        <param name="initial_x" value="0.008"/>
+        <param name="initial_y" value="0.003"/>
+        <param name="initial_theta" value="-0.04"/>
+    -->
+
+    <!-- BAG 2
+        <param name="initial_x" value="0.025"/>
+        <param name="initial_y" value="0.004"/>
+        <param name="initial_theta" value="-0.02"/>
+    -->
+
+    <!-- BAG3 
+        <param name="initial_x" value="0.0056"/>
+        <param name="initial_y" value="0.04"/>
+        <param name="initial_theta" value="-0.008"/>
+    -->
 
     <node pkg="project1" type="vel_pub" name="vel_pub" output="screen" launch-prefix="gnome-terminal --command" />
     <node pkg="project1" type="odom_pub" name="odom_pub" output="screen" launch-prefix="gnome-terminal --command" />

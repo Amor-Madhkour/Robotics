@@ -32,9 +32,7 @@ private:
 
   tf::TransformBroadcaster br;
   tf::Transform odom_transform;
-  //tf::Transform bl_trans;
-  /*tf::TransformBroadcaster odom_broadcaster;
-  geometry_msgs::TransformStamped odom_trans;*/
+
   //Calculations
   double last_time; //Time initialized to infinity
   pose odom_frame_pose; //odom frame pose
@@ -57,7 +55,10 @@ public:
     nh.getParam("/initial_y", odom_frame_pose.y);
     nh.getParam("/initial_theta", odom_frame_pose.theta);
 
-    //In questo modo la pose del base_link rispetto a odom è (0,0,0) nell'istante 0
+    // In questo modo la pose del base_link rispetto a odom è (0,0,0) nell'istante 0
+    // Avremmo potuto settare il frame odom in (0,0,0) e base link a (initial_x, initial_y, initial_theta)
+    // per risultare allineati ai bag anche nella visualizzazione del topic /odom rispetto a /robot/pose
+    // ma la nostra interpretazione del punto del progetto è stata di fare nel modo indicato prima.
     pose_world.x = odom_frame_pose.x;
     pose_world.y = odom_frame_pose.y;
     pose_world.theta = odom_frame_pose.theta;
@@ -88,7 +89,7 @@ public:
 
   void UpdatePoseWorldFromDeltas(pose deltas_b)
   {
-    // It is not strictly necessary to keep the pose relatively to the world,
+    // It is not strictly necessary to keep (nor to calculate) the pose relatively to the world,
     // but it is useful for the debug
     pose_world.x += deltas_b.x;
     pose_world.y += deltas_b.y;
@@ -191,27 +192,6 @@ public:
   }
 
 // ==============================================================
-
-/*
-  void BroadcastTF(float x, float y, float th,  ros::Time timeStamp)
-  {
-    //publish the transform over tf
-    odom_trans.header.stamp = timeStamp;
-    odom_trans.header.frame_id = "odom";
-    odom_trans.child_frame_id = "base_link";
-    
-    tf2::Quaternion myQuat;
-    myQuat.setRPY(0,0,pose_odom.theta);
-    odom_trans.transform.rotation.x = myQuat.x();
-    odom_trans.transform.rotation.y = myQuat.y();
-    odom_trans.transform.rotation.z = myQuat.z();
-    odom_trans.transform.rotation.w = myQuat.w();
-
-    //send the transform
-    odom_broadcaster.sendTransform(odom_trans);
-
-  }
-*/
   
   void BroadcastTF(float x, float y, float th,  ros::Time timeStamp)
   {
@@ -269,13 +249,13 @@ public:
 int main(int argc, char **argv){
 
   ros::init(argc, argv, "calculate_odometry");
-  odom_pub *my_odom_pub;
+  odom_pub my_odom_pub;
   ROS_INFO("ODOMETRY NODE");
 
   //Set dynamic reconfigure
   dynamic_reconfigure::Server<project1::parametersConfig> server;
   dynamic_reconfigure::Server<project1::parametersConfig>::CallbackType f;
-  f = boost::bind(&odom_pub::DynamicReconfigureCallback, my_odom_pub, _1, _2);
+  f = boost::bind(&odom_pub::DynamicReconfigureCallback, &my_odom_pub, _1, _2);
   server.setCallback(f);
 
   ros::spin();
