@@ -36,9 +36,7 @@ private:
   //Calculations
   double last_time; //Time initialized to infinity
   pose odom_frame_pose; //odom frame pose
-  pose pose_world; //robot odometry referred to world frame
   pose pose_odom; //robot odometry referred to odom frame
-
 
   enum integration_mode {EULER, RK};
   int current_integration;
@@ -59,16 +57,9 @@ public:
     // Avremmo potuto settare il frame odom in (0,0,0) e base link a (initial_x, initial_y, initial_theta)
     // per risultare allineati ai bag anche nella visualizzazione del topic /odom rispetto a /robot/pose
     // ma la nostra interpretazione del punto del progetto è stata di fare nel modo indicato prima.
-    pose_world.x = odom_frame_pose.x;
-    pose_world.y = odom_frame_pose.y;
-    pose_world.theta = odom_frame_pose.theta;
     pose_odom.x = 0;
     pose_odom.y = 0;
     pose_odom.theta = 0;
-
-    odom_transform.setOrigin( tf::Vector3(odom_frame_pose.x, odom_frame_pose.y, 0) );
-    odom_transform.setRotation( tf::Quaternion(0, 0, odom_frame_pose.theta) );
-    br.sendTransform(tf::StampedTransform(odom_transform, ros::Time::now(), "odom", "base_link"));
 
     //Subscribe to cmd_vel
     sub_vel = nh.subscribe("/cmd_vel", 1, &odom_pub::CalcluateOdometryCallback, this);
@@ -80,27 +71,11 @@ public:
     set_srv = nh.advertiseService("reset_odom", &odom_pub::ResetOdom, this);
   }
 
-  //REMOVE?
-  void ResetPosition(){
-    pose_world.x = odom_frame_pose.x;
-    pose_world.y = odom_frame_pose.y;
-    pose_world.theta = odom_frame_pose.theta;
-  }
-
-  void UpdatePoseWorldFromDeltas(pose deltas_b)
+  void UpdatePoseOdom(pose deltas_b)
   {
-    // It is not strictly necessary to keep (nor to calculate) the pose relatively to the world,
-    // but it is useful for the debug
-    pose_world.x += deltas_b.x;
-    pose_world.y += deltas_b.y;
-    pose_world.theta += deltas_b.theta;
-  }
-
-  void UpdatePoseOdom()
-  {
-    pose_odom.x = pose_world.x - odom_frame_pose.x;
-    pose_odom.y = pose_world.y - odom_frame_pose.y;
-    pose_odom.theta = pose_world.theta - odom_frame_pose.theta;
+    pose_odom.x += deltas_b.x;
+    pose_odom.y += deltas_b.y;
+    pose_odom.theta = deltas_b.theta;
   }
 
   void Euler(float vx, float vy, float omega, double dt)
@@ -108,15 +83,12 @@ public:
     pose deltas_b;
 
     //Calculate deltas referred to odom with EULER
-    deltas_b.x = (vx * cos(pose_world.theta) - vy * sin(pose_world.theta)) * dt;
-    deltas_b.y = (vx * sin(pose_world.theta) + vy * cos(pose_world.theta)) * dt;
+    deltas_b.x = (vx * cos(pose_odom.theta) - vy * sin(pose_odom.theta)) * dt;
+    deltas_b.y = (vx * sin(pose_odom.theta) + vy * cos(pose_odom.theta)) * dt;
     deltas_b.theta = omega * dt;
 
-    //Update the pose of the robot in the world given the deltas
-    UpdatePoseWorldFromDeltas(deltas_b);
-
     //Update the pose of the robot in the world - Notice: it cannot be updated by hand, but it is calculated relatively to the frame odom position
-    UpdatePoseOdom();
+    UpdatePoseOdom(deltas_b);
 
   }
 
@@ -126,15 +98,12 @@ public:
 
     //Calculate deltas referred to odom with RK
     float offset = omega * dt / 2;
-    deltas_b.x = (vx * cos(pose_world.theta + offset) - vy * sin(pose_world.theta + offset)) * dt;
-    deltas_b.y = (vx * sin(pose_world.theta + offset) + vy * cos(pose_world.theta + offset)) * dt;
+    deltas_b.x = (vx * cos(pose_odom.theta + offset) - vy * sin(pose_odom.theta + offset)) * dt;
+    deltas_b.y = (vx * sin(pose_odom.theta + offset) + vy * cos(pose_odom.theta + offset)) * dt;
     deltas_b.theta = omega * dt;
 
-    //Update the pose of the robot in the world given the deltas
-    UpdatePoseWorldFromDeltas(deltas_b);
-
     //Update the pose of the robot in the world - Notice: it cannot be updated by hand, but it is calculated relatively to the frame odom position
-    UpdatePoseOdom();
+    UpdatePoseOdom(deltas_b);
   }
 
 // ============================ CALLBACKS ===========================
@@ -172,13 +141,13 @@ public:
     msg_out.header.seq = msg_in.header.seq;
     msg_out.header.stamp = msg_in.header.stamp;
     msg_out.header.frame_id = "base_link";
-    msg_out.pose.pose.position.x = pose_odom.x;
-    msg_out.pose.pose.position.y = pose_odom.y;
+    msg_out.pose.pose.position.x = pose_odom.x; 
+    msg_out.pose.pose.position.y = pose_odom.y; 
     
     tf2::Quaternion myQuat;
-    myQuat.setRPY(0,0,pose_odom.theta);
+    myQuat.setRPY(0,0,pose_odom.theta); 
     msg_out.pose.pose.orientation.x = myQuat.x();
-    msg_out.pose.pose.orientation.y= myQuat.y();
+    msg_out.pose.pose.orientation.y = myQuat.y();
     msg_out.pose.pose.orientation.z = myQuat.z();
     msg_out.pose.pose.orientation.w = myQuat.w();
 
@@ -187,7 +156,6 @@ public:
 
     BroadcastTF(msg_out.pose.pose.position.x, msg_out.pose.pose.position.y,msg_out.pose.pose.orientation.w, msg_in.header.stamp);
 
-    ROS_INFO("WORLD: x: %f, y: %f, theta: %f", pose_world.x, pose_world.y, pose_world.theta);
     ROS_INFO("ODOM: x: %f, y: %f, theta: %f", pose_odom.x, pose_odom.y, pose_odom.theta);
   }
 
@@ -221,16 +189,16 @@ public:
   bool ResetOdom(project1::reset_odom::Request &req, project1::reset_odom::Response &res)
   {
       //Recalculate position of odom relative to the desired base_link new pose
-      odom_frame_pose.x = pose_odom.x - req.new_x;
-      odom_frame_pose.y = pose_odom.y - req.new_y;
-      odom_frame_pose.theta = pose_odom.theta - req.new_theta;
+      odom_frame_pose.x = req.new_x - pose_odom.x;
+      odom_frame_pose.y = req.new_y - pose_odom.y;
+      odom_frame_pose.theta = req.new_theta - pose_odom.theta;
 ;
       odom_transform.setOrigin( tf::Vector3(odom_frame_pose.x, odom_frame_pose.y, 0) );
       odom_transform.setRotation( tf::Quaternion(0, 0, odom_frame_pose.theta) );
       br.sendTransform(tf::StampedTransform(odom_transform, ros::Time(last_time), "world", "odom"));
 
-      ROS_INFO("Odom frame has been set to ([%f],[%f],[%f])", odom_frame_pose.x, odom_frame_pose.y, odom_frame_pose.theta);
-      ROS_INFO("Robot new pose([%f],[%f],[%f])", req.new_x, req.new_y, req.new_theta);
+      ROS_INFO("Odom frame has been set to: ([%f],[%f],[%f])", odom_frame_pose.x, odom_frame_pose.y, odom_frame_pose.theta);
+      ROS_INFO("Robot new pose in the world: ([%f],[%f],[%f])", req.new_x, req.new_y, req.new_theta);
 
       return true;
   }
