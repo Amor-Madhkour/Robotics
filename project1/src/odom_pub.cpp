@@ -49,14 +49,13 @@ public:
 
     last_time = 0;
 
-    nh.getParam("/initial_x", odom_frame_pose.x);
-    nh.getParam("/initial_y", odom_frame_pose.y);
-    nh.getParam("/initial_theta", odom_frame_pose.theta);
+    nh.getParam("/initial_x", odom_frame_pose.x); 
+    nh.getParam("/initial_y", odom_frame_pose.y); 
+    nh.getParam("/initial_theta", odom_frame_pose.theta); 
 
     // In questo modo la pose del base_link rispetto a odom è (0,0,0) nell'istante 0
     // Avremmo potuto settare il frame odom in (0,0,0) e base link a (initial_x, initial_y, initial_theta)
-    // per risultare allineati ai bag anche nella visualizzazione del topic /odom rispetto a /robot/pose
-    // ma la nostra interpretazione del punto del progetto è stata di fare nel modo indicato prima.
+    // per risultare allineati a /robot/pose, tuttavia secondo la nostra interpretazione non è questa la richiesta del progetto
     pose_odom.x = 0;
     pose_odom.y = 0;
     pose_odom.theta = 0;
@@ -75,7 +74,7 @@ public:
   {
     pose_odom.x += deltas_b.x;
     pose_odom.y += deltas_b.y;
-    pose_odom.theta = deltas_b.theta;
+    pose_odom.theta += deltas_b.theta;
   }
 
   void Euler(float vx, float vy, float omega, double dt)
