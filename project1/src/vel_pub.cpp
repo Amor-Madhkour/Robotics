@@ -13,7 +13,7 @@
 
 class vel_pub 
 {
-  float r, l, w, N; //REMOVE
+  //float r, l, w, N; //REMOVE
 
 // ================ ATTRIBUTES ================
 private:
@@ -66,17 +66,17 @@ public:
   }
 
   float CalculateVelocityFromTickDelta(float deltaTick, double deltaTime){
-    return (2 * PI * (deltaTick / deltaTime) / N) / GEAR_RATIO;
+    return (2 * PI * (deltaTick / deltaTime) / N_ENCODER) / GEAR_RATIO;
   }
 
 
   void CalcluateVelocityCallback(const sensor_msgs::JointState& msg_in){
 
     // ============= PARAMETERS CALIBRATION =============
-    nh.getParam("/dynamic_reconfigure/r", r);
-    nh.getParam("/dynamic_reconfigure/l", l);
-    nh.getParam("/dynamic_reconfigure/w", w);
-    nh.getParam("/dynamic_reconfigure/N", N);
+    //nh.getParam("/dynamic_reconfigure/r", r);
+    //nh.getParam("/dynamic_reconfigure/l", l);
+    //nh.getParam("/dynamic_reconfigure/w", w);
+    //nh.getParam("/dynamic_reconfigure/N", N);
     //ROS_INFO("%f, %f, %f, %f", r, l, w, N);
     // ==================================================
 
@@ -105,12 +105,12 @@ public:
         //wheels_velocity[i] = msg_in.velocity[i] / T / 60; //SOLO DEBUG
       }
 
-      float vx = r * (wheels_velocity[0] + wheels_velocity[1] + wheels_velocity[2] + wheels_velocity[3]) / 4;
+      float vx = WHEEL_RADIUS * (wheels_velocity[0] + wheels_velocity[1] + wheels_velocity[2] + wheels_velocity[3]) / 4;
 
-      float vy = r * (- wheels_velocity[0] + wheels_velocity[1] + wheels_velocity[2] - wheels_velocity[3]) / 4;
+      float vy = WHEEL_RADIUS * (- wheels_velocity[0] + wheels_velocity[1] + wheels_velocity[2] - wheels_velocity[3]) / 4;
       //float vy = r * (- wheels_velocity[0] + wheels_velocity[1] - wheels_velocity[2] + wheels_velocity[3]) / 4;
 
-      float omega = r * (- wheels_velocity[0] + wheels_velocity[1] - wheels_velocity[2] + wheels_velocity[3]) / (4 * (l + w));
+      float omega = WHEEL_RADIUS * (- wheels_velocity[0] + wheels_velocity[1] - wheels_velocity[2] + wheels_velocity[3]) / (4 * (L_LENGTH + W_LENGTH));
       //float omega = r * (- wheels_velocity[0] + wheels_velocity[1] + wheels_velocity[2] - wheels_velocity[3]) / (4 * (l + w));
 
       //Setup message out

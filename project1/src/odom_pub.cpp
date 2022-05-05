@@ -6,7 +6,11 @@
 #include <sensor_msgs/JointState.h>
 #include <tf/transform_broadcaster.h>
 #include <math.h> 
+#include <std_msgs/Int8.h>
 #include <project1/reset_odom.h>
+
+#include <dynamic_reconfigure/server.h>
+#include <project1/parametersConfig.h>
 
 
 struct pose {
@@ -28,9 +32,9 @@ private:
 
   tf::TransformBroadcaster br;
   tf::Transform odom_transform;
- /* tf::TransformBroadcaster odom_broadcaster;
-  geometry_msgs::TransformStamped odom_trans;
-  */
+  //tf::Transform bl_trans;
+  /*tf::TransformBroadcaster odom_broadcaster;
+  geometry_msgs::TransformStamped odom_trans;*/
   //Calculations
   double last_time; //Time initialized to infinity
   pose odom_frame_pose; //odom frame pose
@@ -40,7 +44,6 @@ private:
 
   enum integration_mode {EULER, RK};
   int current_integration;
-
 
 
 // =============== CONSTRUCTOR ===============
@@ -58,7 +61,6 @@ public:
     pose_world.x = odom_frame_pose.x;
     pose_world.y = odom_frame_pose.y;
     pose_world.theta = odom_frame_pose.theta;
-
     pose_odom.x = 0;
     pose_odom.y = 0;
     pose_odom.theta = 0;
@@ -73,14 +75,9 @@ public:
     //Setup publisher odom
     pub_odom = nh.advertise<nav_msgs::Odometry>("/odom", 1);
 
-
-    //Amor try
-    //pub_odom = nh.advertise<project1::Odom>("my_odom", 1);
-
     //Set service
     set_srv = nh.advertiseService("reset_odom", &odom_pub::ResetOdom, this);
   }
-
 
   //REMOVE?
   void ResetPosition(){
@@ -91,6 +88,8 @@ public:
 
   void UpdatePoseWorldFromDeltas(pose deltas_b)
   {
+    // It is not strictly necessary to keep the pose relatively to the world,
+    // but it is useful for the debug
     pose_world.x += deltas_b.x;
     pose_world.y += deltas_b.y;
     pose_world.theta += deltas_b.theta;
@@ -137,6 +136,19 @@ public:
     UpdatePoseOdom();
   }
 
+// ============================ CALLBACKS ===========================
+
+  void DynamicReconfigureCallback(project1::parametersConfig &config, uint32_t level) {
+    ROS_INFO("Reconfigure Request: %d", config.integration_mode);
+    
+    current_integration = config.integration_mode;
+
+    if(current_integration==integration_mode::EULER)
+      ROS_INFO("Integration_mode: Euler");
+    else
+      ROS_INFO("Integration_mode: RK");
+  }
+
   void CalcluateOdometryCallback(const geometry_msgs::TwistStamped& msg_in){
 
     nav_msgs::Odometry msg_out = nav_msgs::Odometry();
@@ -146,9 +158,6 @@ public:
       last_time = msg_in.header.stamp.toSec();
       return;
     }
-
-    //TODO CHECK IF IS IT OK
-    nh.getParam("/dynamic_reconfigure/integration_mode", current_integration);
 
     //Integrate in the modality specified by the parameter 
     if(current_integration == integration_mode::EULER)
@@ -166,7 +175,7 @@ public:
     msg_out.pose.pose.position.y = pose_odom.y;
     
     tf2::Quaternion myQuat;
-    myQuat.setRPY(0,0,last_odom.theta);
+    myQuat.setRPY(0,0,pose_odom.theta);
     msg_out.pose.pose.orientation.x = myQuat.x();
     msg_out.pose.pose.orientation.y= myQuat.y();
     msg_out.pose.pose.orientation.z = myQuat.z();
@@ -176,75 +185,23 @@ public:
     pub_odom.publish(msg_out);
 
     BroadcastTF(msg_out.pose.pose.position.x, msg_out.pose.pose.position.y,msg_out.pose.pose.orientation.w, msg_in.header.stamp);
-    
-    if(current_integration==integration_mode::EULER)
-      ROS_INFO("Integration_mode: Euler");
-    else
-      ROS_INFO("Integration_mode: RK");
 
     ROS_INFO("WORLD: x: %f, y: %f, theta: %f", pose_world.x, pose_world.y, pose_world.theta);
     ROS_INFO("ODOM: x: %f, y: %f, theta: %f", pose_odom.x, pose_odom.y, pose_odom.theta);
   }
 
-    //TODO
-  /*void CalcluateOdometryCallback(const geometry_msgs::TwistStamped::ConstPtr& msg_in){
+// ==============================================================
 
-    nav_msgs::Odometry msg_out = nav_msgs::Odometry();
-
-    //Reset position if the bag restarts
-    if(last_time > msg_in.header.stamp.toSec())
-    {
-      last_time = msg_in.header.stamp.toSec();
-      SetInitialPositions(); //TO BE REMOVED
-      return;
-    }
-
-    nh.getParam("/integration_mode/integration_mode", current_integration);
-    
-    //Integrate in the modality specified by the parameter 
-    if(current_integration == integration_mode::EULER)
-      Euler(msg_in.twist.linear.x, msg_in.twist.linear.y, msg_in.twist.angular.z, msg_in.header.stamp.toSec() - last_time);
-    else
-      RungeKutta(msg_in.twist.linear.x, msg_in.twist.linear.y, msg_in.twist.angular.z, msg_in.header.stamp.toSec() - last_time);
-    
-    //Roba New
-    last_time = msg_in.header.stamp.toSec();
-    publish_msg(msg_in);
-    }
-
-    void publish_msg(const geometry_msgs::TwistStamped::ConstPtr& msg_in) 
-    {
-        msg_out.odom.header.stamp = msg_in->header.stamp;
-        msg_out.odom.header.seq = msg_in->header.seq;
-        msg_out.odom.header.frame_id = "odom";
-        msg_out.odom.child_frame_id = "base_link";
-   
-        msg_out.pose.pose.position.x = pose_world.x;
-        msg_out.pose.pose.position.y = pose_world.y;
-        msg_out.pose.pose.position.z = pose_world.y;
-        msg_out.pose.pose.orientation = tf::createQuaternionMsgFromYaw(pose_world.theta);
-
-        pub.publish(msg);
- 
-    } 
-  }
-
-  */
-
-  void BroadcastTF(const geometry_msgs::TwistStamped& msg_in)
+/*
+  void BroadcastTF(float x, float y, float th,  ros::Time timeStamp)
   {
     //publish the transform over tf
-    ROS_INFO("fuck fuck fuck fuck");
-    odom_trans.header.stamp = ros::Time::now();
+    odom_trans.header.stamp = timeStamp;
     odom_trans.header.frame_id = "odom";
     odom_trans.child_frame_id = "base_link";
-    myQuat.setRPY(0,0,pose_world.theta);
-    odom_trans.transform.translation.x = pose_world.x;
-    odom_trans.transform.translation.y = pose_world.y;
-    odom_trans.transform.translation.z = 0.0;
     
     tf2::Quaternion myQuat;
-    myQuat.setRPY(0,0,last_odom.theta);
+    myQuat.setRPY(0,0,pose_odom.theta);
     odom_trans.transform.rotation.x = myQuat.x();
     odom_trans.transform.rotation.y = myQuat.y();
     odom_trans.transform.rotation.z = myQuat.z();
@@ -254,26 +211,30 @@ public:
     odom_broadcaster.sendTransform(odom_trans);
 
   }
-
-  /*
+*/
+  
   void BroadcastTF(float x, float y, float th,  ros::Time timeStamp)
   {
-    //http://wiki.ros.org/navigation/Tutorials/RobotSetup/Odom
-
-    //publish the transform over tf
-    
+    geometry_msgs::TransformStamped odom_trans;
+    //publish the transform over tf    
     odom_trans.header.stamp = timeStamp;
     odom_trans.header.frame_id = "odom";
     odom_trans.child_frame_id = "base_link";
 
+    //DA CONTROLLARE
     odom_trans.transform.translation.x = x;
     odom_trans.transform.translation.y = y;
-    odom_trans.transform.translation.z = 0.0;
-    odom_trans.transform.rotation = tf::createQuaternionMsgFromYaw(th);;
+    
+    tf2::Quaternion myQuat;
+    myQuat.setRPY(0,0,pose_odom.theta);
+    odom_trans.transform.rotation.x = myQuat.x();
+    odom_trans.transform.rotation.y = myQuat.y();
+    odom_trans.transform.rotation.z = myQuat.z();
+    odom_trans.transform.rotation.w = myQuat.w();
 
     //send the transform
-    odom_broadcaster.sendTransform(odom_trans);
-  }*/
+    br.sendTransform(odom_trans);
+  }
 
   
   //======================= SERVICE ====================
@@ -283,10 +244,10 @@ public:
       odom_frame_pose.x = pose_odom.x - req.new_x;
       odom_frame_pose.y = pose_odom.y - req.new_y;
       odom_frame_pose.theta = pose_odom.theta - req.new_theta;
-
+;
       odom_transform.setOrigin( tf::Vector3(odom_frame_pose.x, odom_frame_pose.y, 0) );
       odom_transform.setRotation( tf::Quaternion(0, 0, odom_frame_pose.theta) );
-      br.sendTransform(tf::StampedTransform(odom_transform, ros::Time(last_time), "odom", "base_link"));
+      br.sendTransform(tf::StampedTransform(odom_transform, ros::Time(last_time), "world", "odom"));
 
       ROS_INFO("Odom frame has been set to ([%f],[%f],[%f])", odom_frame_pose.x, odom_frame_pose.y, odom_frame_pose.theta);
       ROS_INFO("Robot new pose([%f],[%f],[%f])", req.new_x, req.new_y, req.new_theta);
@@ -308,7 +269,15 @@ public:
 int main(int argc, char **argv){
 
   ros::init(argc, argv, "calculate_odometry");
-  odom_pub my_odom_pub;
+  odom_pub *my_odom_pub;
   ROS_INFO("ODOMETRY NODE");
+
+  //Set dynamic reconfigure
+  dynamic_reconfigure::Server<project1::parametersConfig> server;
+  dynamic_reconfigure::Server<project1::parametersConfig>::CallbackType f;
+  f = boost::bind(&odom_pub::DynamicReconfigureCallback, my_odom_pub, _1, _2);
+  server.setCallback(f);
+
   ros::spin();
 }
+
