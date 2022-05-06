@@ -21,7 +21,7 @@ struct pose {
 
 class odom_pub {
 
-// ================ ATTRIBUTES ================
+// =========================== ATTRIBUTES =============================
 private:
 
   //ROS
@@ -30,8 +30,8 @@ private:
   ros::ServiceServer set_srv;
   ros::Subscriber sub_vel;
 
-  tf::TransformBroadcaster br;
-  tf::Transform odom_transform;
+  tf2_ros::TransformBroadcaster br;
+  geometry_msgs::TransformStamped odom_transform;
 
   //Calculations
   double last_time; //Time initialized to infinity
@@ -42,12 +42,16 @@ private:
   int current_integration;
 
 
-// =============== CONSTRUCTOR ===============
+// =========================== CONSTRUCTOR =============================
 public:
 
   odom_pub(){
 
     last_time = 0;
+
+    //Setup odom transform
+    odom_transform.header.frame_id = "world";
+    odom_transform.child_frame_id = "odom";
 
     nh.getParam("/initial_x", odom_frame_pose.x);
     nh.getParam("/initial_y", odom_frame_pose.y);
@@ -74,7 +78,7 @@ public:
   {
     pose_odom.x += deltas_b.x;
     pose_odom.y += deltas_b.y;
-    pose_odom.theta += deltas_b.theta;
+    pose_odom.theta += deltas_b.theta;  
   }
 
   void Euler(float vx, float vy, float omega, double dt)
@@ -120,8 +124,6 @@ public:
 
   void CalcluateOdometryCallback(const geometry_msgs::TwistStamped& msg_in){
 
-    nav_msgs::Odometry msg_out = nav_msgs::Odometry();
-
     if(last_time == 0)
     {
       last_time = msg_in.header.stamp.toSec();
@@ -137,9 +139,10 @@ public:
     last_time = msg_in.header.stamp.toSec();
 
     //Setup message out with the pose referred to frame odom
+    nav_msgs::Odometry msg_out = nav_msgs::Odometry();
     msg_out.header.seq = msg_in.header.seq;
     msg_out.header.stamp = msg_in.header.stamp;
-    msg_out.header.frame_id = "base_link";
+    msg_out.header.frame_id = "odom";
     msg_out.pose.pose.position.x = pose_odom.x; 
     msg_out.pose.pose.position.y = pose_odom.y; 
     
@@ -149,26 +152,29 @@ public:
     msg_out.pose.pose.orientation.y = myQuat.y();
     msg_out.pose.pose.orientation.z = myQuat.z();
     msg_out.pose.pose.orientation.w = myQuat.w();
-
+ 
     //Publish odom
     pub_odom.publish(msg_out);
+    
 
-    BroadcastTF(msg_out.pose.pose.position.x, msg_out.pose.pose.position.y,msg_out.pose.pose.orientation.w, msg_in.header.stamp);
+    //Broadcast transform
+    BroadcastTF(pose_odom.x, pose_odom.y, pose_odom.theta, msg_in.header.stamp);
 
     ROS_INFO("ODOM: x: %f, y: %f, theta: %f", pose_odom.x, pose_odom.y, pose_odom.theta);
   }
 
 // ==============================================================
   
+// ======================== BROADCASTING ========================
   void BroadcastTF(float x, float y, float th,  ros::Time timeStamp)
   {
     geometry_msgs::TransformStamped odom_trans;
-    //publish the transform over tf    
+
+    //publish the transform over tf
     odom_trans.header.stamp = timeStamp;
     odom_trans.header.frame_id = "odom";
     odom_trans.child_frame_id = "base_link";
 
-    //DA CONTROLLARE
     odom_trans.transform.translation.x = x;
     odom_trans.transform.translation.y = y;
     
@@ -182,19 +188,31 @@ public:
     //send the transform
     br.sendTransform(odom_trans);
   }
-
+// ==============================================================
   
-  //======================= SERVICE ====================
+  //========================== SERVICE ==========================
   bool ResetOdom(project1::reset_odom::Request &req, project1::reset_odom::Response &res)
   {
       //Recalculate position of odom relative to the desired base_link new pose
       odom_frame_pose.x = req.new_x - pose_odom.x;
       odom_frame_pose.y = req.new_y - pose_odom.y;
       odom_frame_pose.theta = req.new_theta - pose_odom.theta;
-;
-      odom_transform.setOrigin( tf::Vector3(odom_frame_pose.x, odom_frame_pose.y, 0) );
-      odom_transform.setRotation( tf::Quaternion(0, 0, odom_frame_pose.theta) );
-      br.sendTransform(tf::StampedTransform(odom_transform, ros::Time(last_time), "world", "odom"));
+
+      //Publish new odom frame position
+      odom_transform.header.stamp = ros::Time(last_time);
+
+      odom_transform.transform.translation.x = odom_frame_pose.x;
+      odom_transform.transform.translation.y = odom_frame_pose.y;
+
+      tf2::Quaternion myQuat;
+      myQuat.setRPY(0,0,pose_odom.theta);
+      odom_transform.transform.rotation.x = myQuat.x();
+      odom_transform.transform.rotation.y = myQuat.y();
+      odom_transform.transform.rotation.z = myQuat.z();
+      odom_transform.transform.rotation.w = myQuat.w();
+
+      //send the transform
+      br.sendTransform(odom_transform);
 
       ROS_INFO("Odom frame has been set to: ([%f],[%f],[%f])", odom_frame_pose.x, odom_frame_pose.y, odom_frame_pose.theta);
       ROS_INFO("Robot new pose in the world: ([%f],[%f],[%f])", req.new_x, req.new_y, req.new_theta);
@@ -210,7 +228,7 @@ public:
     pose_world.theta = req.new_theta;
   }
   */
-  //=====================================================
+  //===============================================================
 };
 
 int main(int argc, char **argv){
