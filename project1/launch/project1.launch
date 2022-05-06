@@ -1,22 +1,23 @@
 <launch>
 
     <!-- params  -->
-    <!-- BAG 1 
+    
+    <!-- BAG 2
         <param name="initial_x" value="0.008"/>
         <param name="initial_y" value="0.003"/>
-        <param name="initial_theta" value="-0.04"/>
+        <param name="initial_theta" value="0.02"/>
     -->
 
     <!-- BAG 2
-        <param name="initial_x" value="0.025"/>
+        <param name="initial_x" value="0.02"/>
         <param name="initial_y" value="0.004"/>
-        <param name="initial_theta" value="-0.02"/>
+        <param name="initial_theta" value="0.053"/>
     -->
 
-    <!-- BAG3 
+    <!-- BAG 2
         <param name="initial_x" value="0.0056"/>
         <param name="initial_y" value="0.04"/>
-        <param name="initial_theta" value="-0.008"/>
+        <param name="initial_theta" value="0.01"/>
     -->
 
     <node pkg="project1" type="vel_pub" name="vel_pub" output="screen" launch-prefix="gnome-terminal --command" />

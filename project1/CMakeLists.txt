@@ -66,7 +66,3 @@ add_executable(wheelRPM_pub src/wheelRPM_pub.cpp)
 add_dependencies(wheelRPM_pub ${catkin_EXPORTED_TARGETS})
 target_link_libraries(wheelRPM_pub ${catkin_LIBRARIES})
 
-## add_executable(dynamic_reconfigure src/dynamic_reconfigure.cpp)
-## add_dependencies(dynamic_reconfigure ${catkin_EXPORTED_TARGETS})
-## target_link_libraries(dynamic_reconfigure ${catkin_LIBRARIES})
-

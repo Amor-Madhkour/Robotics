@@ -13,7 +13,6 @@
 
 class vel_pub 
 {
-  //float r, l, w, N; //REMOVE
 
 // ================ ATTRIBUTES ================
 private:
@@ -22,38 +21,37 @@ private:
   ros::NodeHandle nh;
   ros::Publisher pub_vel;
   ros::Subscriber sub_wheels;
-  //TODO REMOVE
-  //ros::Publisher pub_w;
-  //TODO REMOVE
 
   //Calculations
-  double last_time = 1.7976931348623157E+308; //Time initialized to infinity: this logic allows to play a new bag without restarting this node
+  double last_time;
   float last_ticks[4] = {0, 0, 0, 0};
 
   //Utility
-  const int noise_remover = 2;
-  int skip_counter = 0;
-  float ticks_avg[4];
-
+  //const int noise_remover = 2;
+  //int skip_counter = 0;
+  //float ticks_avg[4];
+  //float r, l, w, N; //PARAMETERS RECALIBRATION
 
 // =============== CONSTRUCTOR ===============
 public:
 
   vel_pub(){
+
+    last_time = 0;
+
     sub_wheels = nh.subscribe("/wheel_states", 1, &vel_pub::CalcluateVelocityCallback, this);
     pub_vel = nh.advertise<geometry_msgs::TwistStamped>("/cmd_vel", 1);
 
-    //TODO REMOVE
-    //pub_w = nh.advertise<geometry_msgs::TwistStamped>("/wheel_vel_test", 1);
-    //TODO REMOVE
   }
+
 
 
 // ================ METHODS ==================
-  void ResetTickAvg(){
-    for(int i = 0; i < sizeof(ticks_avg)/sizeof(float); i++)
-      ticks_avg[i] = 0;
-  }
+
+  //void ResetTickAvg(){
+  //  for(int i = 0; i < sizeof(ticks_avg)/sizeof(float); i++)
+  //    ticks_avg[i] = 0;
+  //}
 
   void UpdateLastValues(const sensor_msgs::JointState& msg_in){
 
@@ -70,9 +68,17 @@ public:
   }
 
 
+
+// ================ CALLBACK ==================
+
   void CalcluateVelocityCallback(const sensor_msgs::JointState& msg_in){
 
     // ============= PARAMETERS CALIBRATION =============
+    // Sappiamo che è sconsigliato utilizzare il getParam all'interno dei callback
+    // ma siccome e una parte di codice che abbiamo dovuto commentare e scommentare 
+    // spesso abbiamo dato più importanza alla compattezza e alla leggibilità,
+    // piuttosto che alle good practices, considerando anche il fatto che nella prodotto
+    // finale queste righe sarebbero state rimosse
     //nh.getParam("/dynamic_reconfigure/r", r);
     //nh.getParam("/dynamic_reconfigure/l", l);
     //nh.getParam("/dynamic_reconfigure/w", w);
@@ -80,38 +86,35 @@ public:
     //ROS_INFO("%f, %f, %f, %f", r, l, w, N);
     // ==================================================
 
-    //============== Decrease Noise ==============
-    if(skip_counter < noise_remover)
-    {
-      for(int i = 0; i < sizeof(ticks_avg)/sizeof(float); i++)
-        ticks_avg[i] = (ticks_avg[i] * skip_counter + msg_in.position[i]) / (skip_counter + 1); //avg di <noise_remover> ticks -> leggero smoothing
-
-      skip_counter++;
-      return;
-    }
-    ResetTickAvg();
-    skip_counter = 0;
-    //============================================
+    //============== Decrease Noise (unused) ============
+    //Rimosso in quanto induce un ritardo indesiderato
+    //if(skip_counter < noise_remover)
+    //{
+    //  for(int i = 0; i < sizeof(ticks_avg)/sizeof(float); i++)
+    //    ticks_avg[i] = (ticks_avg[i] * skip_counter + msg_in.position[i]) / (skip_counter + 1); //avg di <noise_remover> ticks -> leggero smoothing
+    //
+    //  skip_counter++;
+    //  return;
+    //}
+    //ResetTickAvg();
+    //skip_counter = 0;
+    //===================================================
 
     geometry_msgs::TwistStamped msg_out = geometry_msgs::TwistStamped();
 
     //Skipped only at the beginning of the bag
-    if(last_time < msg_in.header.stamp.toSec())
+    if(last_time != 0)
     {
       //Calculate wheels angular velocities - Wheels order: fl, fr, rl, rr
       float wheels_velocity[4];
       for (int i = 0; i < N_WHEELS; i++) {
         wheels_velocity[i] = CalculateVelocityFromTickDelta(msg_in.position[i] - last_ticks[i], msg_in.header.stamp.toSec() - last_time);
-        //wheels_velocity[i] = msg_in.velocity[i] / T / 60; //SOLO DEBUG
+        //wheels_velocity[i] = msg_in.velocity[i] / GEAR_RATE / 60; //SOLO DEBUG
       }
 
       float vx = WHEEL_RADIUS * (wheels_velocity[0] + wheels_velocity[1] + wheels_velocity[2] + wheels_velocity[3]) / 4;
-
       float vy = WHEEL_RADIUS * (- wheels_velocity[0] + wheels_velocity[1] + wheels_velocity[2] - wheels_velocity[3]) / 4;
-      //float vy = r * (- wheels_velocity[0] + wheels_velocity[1] - wheels_velocity[2] + wheels_velocity[3]) / 4;
-
       float omega = WHEEL_RADIUS * (- wheels_velocity[0] + wheels_velocity[1] - wheels_velocity[2] + wheels_velocity[3]) / (4 * (L_LENGTH + W_LENGTH));
-      //float omega = r * (- wheels_velocity[0] + wheels_velocity[1] + wheels_velocity[2] - wheels_velocity[3]) / (4 * (l + w));
 
       //Setup message out
       msg_out.header.seq = msg_in.header.seq;
@@ -125,17 +128,6 @@ public:
       pub_vel.publish(msg_out);
 
       ROS_INFO("Vx: %f, Vy: %f, omega: %f", vx, vy, omega);
-      //ROS_INFO("T. prev: %f, tick prev: %f", last_time, last_ticks_fl);
-
-
-      //REMOVE
-      //geometry_msgs::TwistStamped msg_out2 = geometry_msgs::TwistStamped();
-      //msg_out2.twist.linear.x = wheels_velocity[0]*60*T;
-      //msg_out2.twist.linear.y = wheels_velocity[1]*60*T;
-      //msg_out2.twist.linear.z = wheels_velocity[2]*60*T;
-      //msg_out2.twist.angular.z = wheels_velocity[3]*60*T;
-      //pub_w.publish(msg_out2);
-      //REMOVE
     }
 
       UpdateLastValues(msg_in);

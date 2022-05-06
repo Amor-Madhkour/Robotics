@@ -32,11 +32,10 @@ public:
     msg_out.header.stamp = msg_in.header.stamp;
     msg_out.header.frame_id = msg_in.header.frame_id;
     
-    //TODO VERIFICA SE VA DIVISO PER 2PI
-    msg_out.rpm_fl = (msg_in.twist.linear.x - msg_in.twist.linear.y + (-L_LENGTH-W_LENGTH) * msg_in.twist.angular.z) / WHEEL_RADIUS * 60;
-    msg_out.rpm_fr = (msg_in.twist.linear.x + msg_in.twist.linear.y + (L_LENGTH+W_LENGTH) * msg_in.twist.angular.z) / WHEEL_RADIUS * 60;
-    msg_out.rpm_rl = (msg_in.twist.linear.x + msg_in.twist.linear.y + (-L_LENGTH-W_LENGTH) * msg_in.twist.angular.z) / WHEEL_RADIUS * 60;
-    msg_out.rpm_rr = (msg_in.twist.linear.x - msg_in.twist.linear.y + (L_LENGTH+W_LENGTH) * msg_in.twist.angular.z) / WHEEL_RADIUS * 60;
+    msg_out.rpm_fl = (msg_in.twist.linear.x - msg_in.twist.linear.y + (-L_LENGTH-W_LENGTH) * msg_in.twist.angular.z) / WHEEL_RADIUS * 60 / (2*PI);
+    msg_out.rpm_fr = (msg_in.twist.linear.x + msg_in.twist.linear.y + (L_LENGTH+W_LENGTH) * msg_in.twist.angular.z) / WHEEL_RADIUS * 60 / (2*PI);
+    msg_out.rpm_rl = (msg_in.twist.linear.x + msg_in.twist.linear.y + (-L_LENGTH-W_LENGTH) * msg_in.twist.angular.z) / WHEEL_RADIUS * 60 / (2*PI);
+    msg_out.rpm_rr = (msg_in.twist.linear.x - msg_in.twist.linear.y + (L_LENGTH+W_LENGTH) * msg_in.twist.angular.z) / WHEEL_RADIUS * 60 / (2*PI);
 
     //Publish WheelRPM
     pub_wheelRPM.publish(msg_out);
