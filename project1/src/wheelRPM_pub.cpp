@@ -1,12 +1,13 @@
 #include <ros/ros.h>
 #include "data.h"
+#include <project1/StampedWheelRPM.h>
+
+#include <math.h> 
 
 #include <geometry_msgs/TwistStamped.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <sensor_msgs/JointState.h>
-#include <project1/StampedWheelRPM.h>
 
-#include <math.h> 
 
 class odom_pub {
 
@@ -29,7 +30,7 @@ public:
 
     project1::StampedWheelRPM msg_out = project1::StampedWheelRPM();
 
-    msg_out.header.stamp = msg_in.header.stamp;
+    msg_out.header.stamp = ros::Time::now();
     msg_out.header.frame_id = msg_in.header.frame_id;
     
     msg_out.rpm_fl = (msg_in.twist.linear.x - msg_in.twist.linear.y + (-L_LENGTH-W_LENGTH) * msg_in.twist.angular.z) / WHEEL_RADIUS / (2*PI) * 60;

@@ -1,9 +1,11 @@
-#include <ros/ros.h>
 #include "data.h"
+
+#include <ros/ros.h>
+#include <std_msgs/Time.h>
+
+#include <sensor_msgs/JointState.h>
 #include <geometry_msgs/TwistStamped.h>
 #include <nav_msgs/Odometry.h>
-#include <sensor_msgs/JointState.h>
-#include <std_msgs/Time.h>
 
 //  //======== PARAMETERS CALIBRATION =========
 //#include <dynamic_reconfigure/server.h>
@@ -55,7 +57,7 @@ public:
 
   void UpdateLastValues(const sensor_msgs::JointState& msg_in){
 
-    last_time = msg_in.header.stamp.toSec();
+    last_time = ros::Time::now().toSec();
 
     for (int i = 0; i < N_WHEELS; i++) {
       last_ticks[i] = msg_in.position[i];
@@ -100,7 +102,6 @@ public:
     //skip_counter = 0;
     //===================================================
 
-    geometry_msgs::TwistStamped msg_out = geometry_msgs::TwistStamped();
 
     //Skipped only at the beginning of the bag
     if(last_time != 0)
@@ -108,7 +109,7 @@ public:
       //Calculate wheels angular velocities - Wheels order: fl, fr, rl, rr
       float wheels_velocity[4];
       for (int i = 0; i < N_WHEELS; i++) {
-        wheels_velocity[i] = CalculateVelocityFromTickDelta(msg_in.position[i] - last_ticks[i], msg_in.header.stamp.toSec() - last_time);
+        wheels_velocity[i] = CalculateVelocityFromTickDelta(msg_in.position[i] - last_ticks[i], ros::Time::now().toSec() - last_time);
         //wheels_velocity[i] = msg_in.velocity[i] / GEAR_RATE / 60; //SOLO DEBUG
       }
 
@@ -117,8 +118,9 @@ public:
       float omega = WHEEL_RADIUS * (- wheels_velocity[0] + wheels_velocity[1] - wheels_velocity[2] + wheels_velocity[3]) / (4 * (L_LENGTH + W_LENGTH));
 
       //Setup message out
+      geometry_msgs::TwistStamped msg_out = geometry_msgs::TwistStamped();
       msg_out.header.seq = msg_in.header.seq;
-      msg_out.header.stamp = msg_in.header.stamp;
+      msg_out.header.stamp = ros::Time::now();
       msg_out.header.frame_id = msg_in.header.frame_id;
       msg_out.twist.linear.x = vx;
       msg_out.twist.linear.y = vy;

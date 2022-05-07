@@ -2,32 +2,29 @@
 
     <!-- params  -->
     
-    <!-- BAG 1
+    <!-- BAG 2
         <param name="initial_x" value="0.008"/>
         <param name="initial_y" value="0.003"/>
         <param name="initial_theta" value="0.02"/>
+        <node pkg="tf2_ros" type="static_transform_publisher" name="world" args="0.008 0.003 0 0 0 0.010 1 world odom"/>
     -->
 
     <!-- BAG 2
         <param name="initial_x" value="0.02"/>
         <param name="initial_y" value="0.004"/>
         <param name="initial_theta" value="0.053"/>
+        <node pkg="tf2_ros" type="static_transform_publisher" name="world" args="0.02 0.004 0 0 0 0.026 1 world odom"/>
     -->
 
     <!-- BAG 3
         <param name="initial_x" value="0.0056"/>
         <param name="initial_y" value="0.04"/>
         <param name="initial_theta" value="0.01"/>
+        <node pkg="tf2_ros" type="static_transform_publisher" name="world" args="0.0056 0.04 0 0 0 0.005 1 world odom"/>
     -->
 
     <node pkg="project1" type="vel_pub" name="vel_pub" output="screen" launch-prefix="gnome-terminal --command" />
     <node pkg="project1" type="odom_pub" name="odom_pub" output="screen" launch-prefix="gnome-terminal --command" />
     <node pkg="project1" type="wheelRPM_pub" name="wheelRPM_pub" output="screen" launch-prefix="gnome-terminal --command" />
-    //
-    <node pkg="tf2_ros" type="static_transform_publisher" name="world" args="0 0 0 0 0 0 1 world odom"/>
-    //
-   <!-- <node pkg="tf2_ros" type="static_transform_publisher" name="world" args="0 0 0 0 0 0 1 world odom"/>
-    //
-    <node pkg="tf2_ros" type="static_transform_publisher" name="world" args="0 0 0 0 0 0 1 world odom"/>
 -->
 </launch>
