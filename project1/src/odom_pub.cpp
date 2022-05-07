@@ -16,7 +16,7 @@
 #include <tf2_ros/transform_listener.h>
 
 
-
+//We could have used the geometry_msgs/Pose, but this allows more compactness and readability of the code
 struct pose {
   float x;
   float y;
@@ -169,7 +169,7 @@ public:
     pub_odom.publish(msg_out);
     
 
-    //Broadcast transform base_link->odom
+    //Broadcast transform odom->base_link
     BroadcastTF("odom", "base_link", pose_odom, ros::Time::now());
 
     ROS_INFO("ODOM: x: %f, y: %f, theta: %f", pose_odom.x, pose_odom.y, pose_odom.theta);
