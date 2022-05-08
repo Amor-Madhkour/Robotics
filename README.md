@@ -15,13 +15,12 @@
 	1. Dynamic reconfigure to select between Euler and Runge Kutta integration.
 
 - **vel_pub.cpp**
-	1. Compute v and ω from wheel ticks through the following formulas:
-	~~(Scrivi formule)~~
+	1. Compute v and ω from wheel ticks;
 	1. Publish v and ⍵ as topic /cmd_vel of type geometry_msgs/TwistStamped.
 
 - **wheelRPM_pub.cpp**
-	1. Read v and ⍵ from /cmd_vel and computes the speed of each wheel (in RPM) through the following formulas:
-	~~(scrivi formula)~~
+	1. Read v and ⍵ from /cmd_vel and computes the speed of each wheel (in RPM).
+	1. Publish the computed wheel speed as custom message on topic /wheels_rpm
 
 ------------
 
@@ -35,7 +34,7 @@ Defines the enum integration_mode, used for dynamic reconfigure. It used to defi
 
 #### /include
 - **data.h**
-Stores the calibrated parameters.
+Stores the calibrated parameters (r, l, w, N) and other useful constants.
 
 ------------
 
@@ -57,7 +56,7 @@ Defines the odom reset service parameters.
 - **/integration_mode**: the enumerator that defines the integration mode. if equals to 0 the integration is EULER, otherwise it is RUNGE KUTTA.
 
 ## TF Tree
-TODO
+world->odom->base_link
 
 ## Custom messages and services
  - **StampedWheelRPM.msg**
@@ -77,11 +76,20 @@ TODO
 		---
 
 ## How to start the nodes
-(TODO)
+Before running the bag it is necessary to uncomment the relative parameters initialization in the ros file:
+e.g. before starting the BAG 1 uncomment the lines:
+
+		<!-- BAG 1
+		<param name="initial_x" value="0.008"/>
+		<param name="initial_y" value="0.003"/>
+		<param name="initial_theta" value="0.02"/>
+	 	<node pkg="tf2_ros" type="static_transform_publisher" name="world" args="0.008 0.003 0 0 0 0.010 1 world odom"></node>
+		-->
+These lines allow to initialize the parameters initial_x, initial_y, initial_theta and define a static transform world-odom.
 
 
 ## Extra notes
-The parameters have been calibrated thorugh dynamic_reconfigure and plotjuggler. We tried to variate the r,N,w,l in runtime while running tha bag and tried to make the plot of our /odom as similar as we could to the ground truth (/robot/pose).
+The parameters have been calibrated thorugh dynamic reconfigure and plotjuggler. We tried to variate the r,N,w,l in runtime while running tha bag and tried to make the plot of our /odom as similar as we could to the ground truth (/robot/pose).
 
 
 
