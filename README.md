@@ -49,6 +49,13 @@ Defines the message containing the speed of the wheels.
 - **reset_odom.srv**
 Defines the odom reset service parameters.
 
+------------
+
+#### /launch
+- **project1.launch**
+Initializes the static transform and the initial poses for each bag.
+Each node is started in a new terminal and the published messages appear in the command line; this choice was useful for the debug and helps visualizing the data.
+
 ## ROS Parameters
 - **/initial_x**: the x of the frame odom at the beginning of the bag.
 - **/initial_y**: the y of the frame odom at the beginning of the bag.
