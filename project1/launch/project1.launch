@@ -2,7 +2,7 @@
 
     <!-- params  -->
     
-    <!-- BAG 2
+    <!-- BAG 1
         <param name="initial_x" value="0.008"/>
         <param name="initial_y" value="0.003"/>
         <param name="initial_theta" value="0.02"/>
